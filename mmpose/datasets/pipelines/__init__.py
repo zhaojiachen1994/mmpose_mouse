@@ -4,7 +4,7 @@ from .gesture_transform import *  # noqa
 from .hand_transform import *  # noqa
 from .loading import *  # noqa
 from .mesh_transform import *  # noqa
+from .mouse_pipeline import *
 from .pose3d_transform import *  # noqa
 from .shared_transform import *  # noqa
 from .top_down_transform import *  # noqa
-from .mouse_pipeline import *
