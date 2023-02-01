@@ -24,7 +24,7 @@ except ImportError:
 
 
 @POSENETS.register_module()
-class MouseNet(BasePose):
+class MouseNet_3d(BasePose):
     """
     My top-down 3d pose detectors with keypoint_head , feature_head and triangulate_head
     Args:

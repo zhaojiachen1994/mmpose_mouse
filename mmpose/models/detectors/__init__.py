@@ -4,6 +4,7 @@ from .cid import CID
 from .gesture_recognizer import GestureRecognizer
 from .interhand_3d import Interhand3D
 from .mesh import ParametricMesh
+from .mouse_net_3d import MouseNet_3d
 from .multi_task import MultiTask
 from .multiview_pose import (DetectAndRegress, VoxelCenterDetector,
                              VoxelSinglePose)
@@ -16,5 +17,6 @@ __all__ = [
     'TopDown', 'AssociativeEmbedding', 'CID', 'ParametricMesh', 'MultiTask',
     'PoseLifter', 'Interhand3D', 'PoseWarper', 'DetectAndRegress',
     'VoxelCenterDetector', 'VoxelSinglePose', 'GestureRecognizer',
-    'DisentangledKeypointRegressor'
+    'DisentangledKeypointRegressor',
+    'MouseNet_3d'
 ]
