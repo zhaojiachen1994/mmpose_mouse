@@ -1,4 +1,3 @@
-# the original my_top_down.py
 # modified from top_down model
 
 import mmcv
@@ -24,26 +23,24 @@ except ImportError:
 
 
 @POSENETS.register_module()
-class MouseNet_3d(BasePose):
-    """
-    My top-down 3d pose detectors with keypoint_head , feature_head and triangulate_head
-    Args:
-        backbone (dict): Backbone modules to extract feature.
-        keypoint_head (dict): Keypoint head to process feature, to get the heatmap
-        feature_head (dict): Feature head to further extract features.
+class MouseNet_2d(BasePose):
+    """Top-down pose detectors.
 
-        train_cfg (dict): Config for training. Default: None.
-        test_cfg (dict): Config for testing. Default: None.
-        pretrained (str): Path to the pretrained backbone, without head parts.
-        loss_pose (None): Deprecated arguments. Please use
-            `loss_keypoint` for heads instead.
-    """
+        Args:
+            backbone (dict): Backbone modules to extract feature.
+            keypoint_head (dict): Keypoint head to process feature.
+            feature_head (dict): Feature head to further extract features.
+            train_cfg (dict): Config for training. Default: None.
+            test_cfg (dict): Config for testing. Default: None.
+            pretrained (str): Path to the pretrained models.
+            loss_pose (None): Deprecated arguments. Please use
+                `loss_keypoint` for heads instead.
+        """
 
     def __init__(self,
                  backbone,
                  keypoint_head,
                  feature_head=None,
-                 triangulate_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
@@ -65,10 +62,6 @@ class MouseNet_3d(BasePose):
             feature_head['test_cfg'] = test_cfg
             self.feature_head = builder.build_head(feature_head)
 
-        # init the triangulate_head
-        if triangulate_head is not None:
-            self.triangulate_head = builder.build_head(triangulate_head)
-
         self.pretrained = pretrained
         self.init_weights()
 
@@ -82,11 +75,6 @@ class MouseNet_3d(BasePose):
         """check if has feature_head"""
         return hasattr(self, 'feature_head')
 
-    @property
-    def with_triangulate_head(self):
-        """check if has triangulate_head"""
-        return hasattr(self, 'triangulate_head')
-
     def init_weights(self, pretrained=None):
         """Weight initialization for model."""
         if pretrained is not None:
@@ -98,62 +86,48 @@ class MouseNet_3d(BasePose):
             self.feature_head.init_weights()
 
     @auto_fp16(apply_to=('img',))
-    def forward(self,
-                img,
-                img_metas=None,
-                proj_matrices=None,
+    def forward(self, img, img_metas,
                 target=None,
                 target_weight=None,
-                kpt_3d_gt=None,
-                return_loss=True,
-                return_heatmap=False,
-                **kwargs):
+                return_loss=True, **kwargs):
         """Calls either forward_train or forward_test depending on whether
-                return_loss=True. Note this setting will change the expected inputs.
-                When `return_loss=True`, img and img_meta are single-nested (i.e.
-                Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
-                should be double nested (i.e.  List[Tensor], List[List[dict]]), with
-                the outer list indicating test time augmentations.
-            Args:
-                img: Input images, tensor [bs, num_cameras, 3, h_img, w_img]
-                proj_matrices: tensor [bs, num_cameras, 3, 4]
-                target (torch.Tensor[NxKxHxW]): Target heatmaps.
-                target_weight (torch.Tensor[NxKx1]): Weights across
-                    different joint types.
-                kpt_3d_gt (tensor [bs, num_joints, 3]): the ground-truth 3d keypoint coordinates.
-                img_metas (list(dict)): Information about data augmentation
-                return_loss (bool): Option to `return loss`. `return loss=True`
-                    for training, `return loss=False` for validation & test.
-                return_heatmap (bool) : Option to return heatmap.
-            Returns:
-                dict|tuple: if `return loss` is true, then return losses. \
-                    Otherwise, return predicted poses, boxes, image paths \
-                    and heatmaps.
+                        return_loss=True. Note this setting will change the expected inputs.
+                        When `return_loss=True`, img and img_meta are single-nested (i.e.
+                        Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
+                        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
+                        the outer list indicating test time augmentations.
+                    Args:
+                        img: Input images, tensor [bs, num_cameras, 3, h_img, w_img]
+                        proj_matrices: tensor [bs, num_cameras, 3, 4]
+                        target (torch.Tensor[NxKxHxW]): Target heatmaps.
+                        target_weight (torch.Tensor[NxKx1]): Weights across
+                            different joint types.
+                        img_metas (list(dict)): Information about data augmentation
+                        return_loss (bool): Option to `return loss`. `return loss=True`
+                            for training, `return loss=False` for validation & test.
+                        return_heatmap (bool) : Option to return heatmap.
+                    Returns:
+                        dict|tuple: if `return loss` is true, then return losses. \
+                            Otherwise, return predicted poses, boxes, image paths \
+                            and heatmaps.
         """
         if return_loss:
             return self.forward_train(img,
                                       img_metas,
-                                      proj_matrices,
                                       target,
                                       target_weight,
-                                      **kwargs
-                                      )
+                                      **kwargs)
         else:
             return self.forward_test(
-                img,
-                img_metas,
-                proj_matrices,
-                return_heatmap,
-                **kwargs)
+                img, img_metas, return_heatmap=return_heatmap, **kwargs)
 
-    def forward_train(self, img, img_metas, proj_matrices, target,
-                      target_weight, kpt_3d_gt, **kwargs):
+    def forward_train(self, img, img_metas, **kwargs):
         """Defines the computation performed at every call when training.
-        img: input image [bs, num_cams, num_channel, h_img, w_img]
-        proj_matrices: project matrices [bs, num_cams, 3, 4]
-        target: the ground-truth 2d keypoint heatmap, [bs, num_cams, h_map, w_map]
-        target_weight: Weights across different joint types. [N, num_joints, 3]
-        kpt_3d_gt: the ground-truth 3d keypoint coordinates, [bs, num_joints, 3]
+                img: input image [bs, num_cams, num_channel, h_img, w_img]
+                proj_matrices: project matrices [bs, num_cams, 3, 4]
+                target: the ground-truth 2d keypoint heatmap, [bs, num_cams, h_map, w_map]
+                target_weight: Weights across different joint types. [N, num_joints, 3]
+                kpt_3d_gt: the ground-truth 3d keypoint coordinates, [bs, num_joints, 3]
         """
         [bs, num_cams, num_channel, h_img, w_img] = img.shape
         h_map, w_map = target.shape[-2], target.shape[-1]
@@ -166,37 +140,35 @@ class MouseNet_3d(BasePose):
             heatmap = self.keypoint_head(hidden_features)
         if self.with_feature_head:
             features = self.feature_head(hidden_features, heatmap)
-        if self.with_triangulate_head:
-            kpt_3d_pred, res_triang, kp_2d_croped, kp_2d_heatmap = self.triangulate_head(heatmap, proj_matrices)
 
         # if return loss
         losses = dict()
-        if self.with_keypoint_head and \
-                target is not None and \
-                self.train_cfg.get('supervised_2d', True):
-            keypoint2d_losses = self.keypoint_head.get_loss(heatmap, target, target_weight)
+        if self.with_keypoint_head:
+            keypoint2d_losses = self.keypoint_head.get_loss(
+                heatmap, target, target_weight)
             losses.update(keypoint2d_losses)
-            keypoint_accuracy = self.keypoint_head.get_accuracy(heatmap, target, target_weight)
+            keypoint_accuracy = self.keypoint_head.get_accuracy(
+                heatmap, target, target_weight)
             losses.update(keypoint_accuracy)
 
         if self.with_feature_head and self.train_cfg.get('contrastive_feature', True):
             sup_con_loss = self.feature_head.get_loss(features, labels)
             losses.update(sup_con_loss)
 
-        if self.with_triangulate_head and kpt_3d_gt is not None and self.train_cfg.get('supervised_3d', True):
-            sup_3d_loss = self.triangulate_head.get_sup_loss(kpt_3d_pred, kpt_3d_gt, target_weight)
-            losses.update(sup_3d_loss)
         return losses
 
-    def forward_test(self, img, img_metas, proj_matrices, return_heatmap, **kwargs):
-        """Defines the computation performed at every call when testing"""
-        [bs, num_cams, num_channel, h_img, w_img] = img.shape
+    def forward_test(self, img, img_metas,
+                     return_heatmap=False, **kwargs):
+        """Defines the computation performed at every call when testing.
+        img: [bs, num_cams, num_channel, h_img, w_img]
+        """
+        assert img.size(0) == len(img_metas)
         img = img.reshape(-1, *img.shape[2:])
+        batch_size, _, img_height, img_width = img.shape
 
         result = {}
-        features = self.backnone(img)
+        features = self.backbone(img)
         if self.with_keypoint_head:
-            heatmap = self.keypoint_head(features)  # for triangulate-head input
             output_heatmap = self.keypoint_head.inference_model(
                 features, flip_pairs=None)
 
@@ -212,32 +184,30 @@ class MouseNet_3d(BasePose):
                 output_heatmap = output_heatmap / 2
 
         if self.with_keypoint_head:
+            keypoint_result = self.keypoint_head.decode(
+                img_metas, output_heatmap, img_size=[img_width, img_height])
+            result.update(keypoint_result)
+
             if not return_heatmap:
                 output_heatmap = None
             result['output_heatmap'] = output_heatmap
 
-        if self.with_triang:
-            kp_3d, res_triang, _, _ = self.triangulate_head(heatmap, proj_metrices)
-            result['kp_3d'] = kp_3d.detach().cpu().numpy()
-            result['res_triang'] = res_triang.detach().cpu().numpy()
         return result
 
     def foraward_dummy(self, img):
         """Used for computing network FLOPs.
-        See ``tools/get_flops.py``.
-        Args:
-            img (torch.Tensor): Input image.
-        Returns:
-            Tensor: Output heatmaps.
+                See ``tools/get_flops.py``.
+                Args:
+                    img (torch.Tensor): Input image.
+                Returns:
+                    Tensor: Output heatmaps.
         """
         hidden_features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(hidden_features)
         if self.with_feature_head:
             output = self.feature_head(hidden_features, heatmap)
-        if self.with_triangulate_head:
-            kp_3d_pred = self.triangulate_head(heatmap)
-        return heatmap, output, kp_3d_pred
+        return heatmap, output
 
     def show_result(self,
                     img,

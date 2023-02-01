@@ -27,6 +27,5 @@ __all__ = [
     'DeepposeRegressionHead', 'TemporalRegressionHead', 'Interhand3DHead',
     'HMRMeshHead', 'DeconvHead', 'ViPNASHeatmapSimpleHead', 'CuboidCenterHead',
     'CuboidPoseHead', 'MultiModalSSAHead', 'DEKRHead',
-
     'TopdownHeatmapConvHead', 'TopdownFeatureHead', 'TriangulateHead'
 ]
