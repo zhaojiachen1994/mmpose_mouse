@@ -1,21 +1,24 @@
-import json
+# original anliang's animal_mouse_dannce_dataset
 import copy
+import json
+import numpy as np
 import os.path as osp
+import pickle
 import tempfile
 import warnings
 from collections import OrderedDict, defaultdict
-import pickle
-import numpy as np
+from xtcocotools.coco import COCO
+from xtcocotools.cocoeval import COCOeval
 
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.base import Kpt3dMviewRgbImgDirectDataset
-from xtcocotools.coco import COCO
-from xtcocotools.cocoeval import COCOeval
 from ....core.post_processing import oks_nms, soft_oks_nms
+
 
 @DATASETS.register_module()
 class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
     ALLOWED_METRICS = {'mpjpe', 'mAP'}
+
     def __init__(self,
                  ann_file,
                  ann_3d_file,
