@@ -16,6 +16,7 @@ from .topdown_heatmap_conv_head import TopdownHeatmapConvHead
 from .topdown_heatmap_multi_stage_head import (TopdownHeatmapMSMUHead,
                                                TopdownHeatmapMultiStageHead)
 from .topdown_heatmap_simple_head import TopdownHeatmapSimpleHead
+from .triangulate_head import TriangulateHead
 from .vipnas_heatmap_simple_head import ViPNASHeatmapSimpleHead
 from .voxelpose_head import CuboidCenterHead, CuboidPoseHead
 
@@ -27,5 +28,5 @@ __all__ = [
     'HMRMeshHead', 'DeconvHead', 'ViPNASHeatmapSimpleHead', 'CuboidCenterHead',
     'CuboidPoseHead', 'MultiModalSSAHead', 'DEKRHead',
 
-    'TopdownHeatmapConvHead', 'TopdownFeatureHead'
+    'TopdownHeatmapConvHead', 'TopdownFeatureHead', 'TriangulateHead'
 ]
