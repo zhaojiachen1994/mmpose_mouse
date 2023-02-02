@@ -1,10 +1,10 @@
 _base_ = [
     '../../_base_/default_runtime.py',
-    '../../_base_/mouse_datasets/mouse_dannce_2d_sview.py'
+    '../../_base_/mouse_datasets/mouse_dannce_3d.py'
 ]
 
 # evaluation config
-evaluation = dict(interval=2, metric='mAP', save_best='AP')
+evaluation = dict(interval=10, metric='mAP', save_best='AP')
 
 # optimizer config
 optimizer = dict(
@@ -41,12 +41,12 @@ channel_cfg = dict(
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
     ])
 
-"""total model pretrain"""
+"""total model pretrain weights"""
 # load_from = "D:/Pycharm Projects-win/mmpose/work_dirs/my_hrnet_w48_dannce_256x256/latest.pth"
 
 """model config"""
 model = dict(
-    type='MouseNet_2d',
+    type='MouseNet_3d',
     # pretrained="D:\Pycharm Projects-win\mmpose\checkpoints\hrnet_w48-8ef0771d.pth",
     # pretrained="work_dirs/hrnet_gray/hrnet_w48_mouse_dannce_256x256/best_AP_epoch_190.pth",
     # pretrained setting is used for initializing backbone
@@ -134,51 +134,89 @@ data_cfg = dict(
     use_gt_bbox=True,
     det_bbox_thr=0.0,
     bbox_file='',
+    space_size=[0, 0, 0],
+    space_center=[0, 0, 0],
+    cube_size=[0, 0, 0],
+    num_cameras=6,
+    use_different_joint_weights=False
 )
 
-# train pipeline config
+# train pipeline setting for model with triangulate_head
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='TopDownGetBboxCenterScale', padding=1.25),
-    dict(type='TopDownRandomShiftBboxCenter', shift_factor=0.16, prob=0.3),
-    dict(type='TopDownRandomFlip', flip_prob=0.5),
     dict(
-        type='TopDownHalfBodyTransform',
-        num_joints_half_body=8,
-        prob_half_body=0.3),
+        type='MultiItemProcess',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='SquareBbox'),
+            dict(type='CropImage',
+                 update_camera=True),
+            dict(type='ResizeImage',
+                 update_camera=False),
+            dict(type='ToTensor'),
+            dict(
+                type='NormalizeTensor',
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]),
+            dict(type='TopDownGenerateTarget', sigma=2)
+        ]),
     dict(
-        type='TopDownGetRandomScaleRotation', rot_factor=40, scale_factor=0.5),
-    dict(type='TopDownAffine'),
-    dict(type='ToTensor'),
+        type='DiscardDuplicatedItems',
+        keys_list=[
+            'dataset', 'ann_info', 'roots_3d', 'joints_world', 'joints_world_visible', 'flip_pairs'
+        ]),
     dict(
-        type='NormalizeTensor',
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]),
-    dict(type='TopDownGenerateTarget', sigma=2),
+        type='GroupCams',
+        keys=['img', 'target', 'target_weight']
+    ),
     dict(
         type='Collect',
         keys=['img', 'target', 'target_weight'],
         meta_keys=[
-            'image_file', 'joints_3d', 'joints_3d_visible', 'center', 'scale',
-            'rotation', 'bbox_score', 'flip_pairs'
+            'image_file', 'joints_3d', 'joints_3d_visible', 'bbox',
+            # 'center', 'scale', 'rotation', 'bbox_score', 'flip_pairs',
+            'joints_world', 'joints_world_visible', 'camera',
         ]),
 ]
 
+# evaluate pipeline setting for model with triangulate_head
 eval_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='TopDownGetBboxCenterScale', padding=1.25),
-    dict(type='TopDownAffine'),
-    dict(type='ToTensor'),
     dict(
-        type='NormalizeTensor',
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]),
+        type='MultiItemProcess',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='SquareBbox'),
+            dict(type='CropImage',
+                 update_camera=True),
+            dict(type='ResizeImage',
+                 update_camera=False),
+            dict(type='ComputeProjMatric'),
+            dict(type='ToTensor'),
+            dict(
+                type='NormalizeTensor',
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]),
+            dict(type='TopDownGenerateTarget', sigma=2),
+        ]),
+    dict(
+        type='DiscardDuplicatedItems',
+        keys_list=[
+            'dataset', 'ann_info', 'roots_3d', 'joints_world', 'joints_world_visible'
+        ]),
+    dict(
+        type='GroupCams',
+        keys=['img', 'proj_metric']
+    ),
+    # dict(
+    #     type='ComputeProjMatrics'
+    # ),
+
     dict(
         type='Collect',
-        keys=['img'],
+        keys=['img', 'proj_metric'],
         meta_keys=[
-            'image_file', 'center', 'scale', 'rotation', 'bbox_score',
-            'flip_pairs'
+            'image_file', 'bbox'
+            # 'center', 'scale', 'rotation', 'bbox_score', 'flip_pairs',
+            # 'camera',# 'proj_metrices'
         ]),
 ]
 
@@ -186,13 +224,15 @@ test_pipeline = eval_pipeline
 
 data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=4,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=32),
-    test_dataloader=dict(samples_per_gpu=32),
+    val_dataloader=dict(samples_per_gpu=4),
+    test_dataloader=dict(samples_per_gpu=4),
     train=dict(
-        type='MouseDannce2dDatasetSview',
+        type='MouseDannce3dDataset',
         ann_file=f'{data_root}/annotations_train930.json',
+        ann_3d_file=f'{data_root}/joints_3d.json',
+        cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
@@ -201,6 +241,8 @@ data = dict(
     eval=dict(
         type='MouseDannce2dDatasetSview',
         ann_file=f'{data_root}/annotations_eval930.json',
+        ann_3d_file=f'{data_root}/joints_3d.json',
+        cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
         data_cfg=data_cfg,
         pipeline=eval_pipeline,
@@ -209,6 +251,8 @@ data = dict(
     test=dict(
         type='MouseDannce2dDatasetSview',
         ann_file=f'{data_root}/annotations_eval930.json',
+        ann_3d_file=f'{data_root}/joints_3d.json',
+        cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
         data_cfg=data_cfg,
         pipeline=eval_pipeline,
