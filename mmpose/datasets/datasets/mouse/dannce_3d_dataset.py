@@ -43,10 +43,6 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         """
 
         if dataset_info is None:
-            warnings.warn(
-                'dataset_info is missing. '
-                'Check https://github.com/open-mmlab/mmpose/pull/663 '
-                'for details.', DeprecationWarning)
             cfg = Config.fromfile('configs/_base_/datasets/mouse_datasets/mouse_dannce_3d.py')
             dataset_info = cfg._cfg_dict['dataset_info']
 
@@ -88,7 +84,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                 self.coco.imgs)
 
         self.cameras = self._get_cam(cam_file)
-        self.db = self._get_bd()
+        self.db = self._get_db()
 
         # get the 3d keypoint ground truth, here written as joints_4d to match the mmpose denotation
         self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(self.ann_3d_file)
@@ -287,8 +283,8 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
             result = copy.deepcopy(self.db[self.num_cameras * idx + c])
             result['ann_info'] = self.ann_info
             result['camera'] = self.cameras[c]
-            result['joints_world'] = self.joints_world[idx]
-            result['joints_world_visible'] = self.joints_world_visible[idx]
+            result['joints_4d'] = self.joints_4d[idx]
+            result['joints_4d_visible'] = self.joints_4d_visible[idx]
             # dummy label
             result['label'] = 0,
             results[c] = result

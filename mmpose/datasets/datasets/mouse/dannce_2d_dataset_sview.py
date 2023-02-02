@@ -14,8 +14,8 @@ from mmpose.datasets.datasets.base import Kpt2dSviewRgbImgTopDownDataset
 
 
 @DATASETS.register_module()
-class MouseDannceDataset(Kpt2dSviewRgbImgTopDownDataset):
-    """Animal-Pose dataset for animal pose estimation.
+class MouseDannce2dDatasetSview(Kpt2dSviewRgbImgTopDownDataset):
+    """single-view 2d dannce mouse dataset for animal pose estimation.
 
     "Cross-domain Adaptation For Animal Pose Estimation" ICCV'2019
     More details can be found in the `paper
