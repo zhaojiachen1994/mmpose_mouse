@@ -1,12 +1,13 @@
 # original anliang's animal_mouse_dannce_dataset
 import copy
 import json
-import numpy as np
 import os.path as osp
 import pickle
 import tempfile
 import warnings
 from collections import OrderedDict, defaultdict
+
+import numpy as np
 from xtcocotools.coco import COCO
 from xtcocotools.cocoeval import COCOeval
 
@@ -257,7 +258,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                 return name_value
 
     def _get_joints_3d(self, ann_3d_file):
-        """load the ground truth 3d keypoint"""
+        """load the ground truth 3d keypoint, annoted as 4d in outer space"""
         with open(ann_3d_file, 'rb') as f:
             data = json.load(f)
         data = np.array(data['joint_3d'])
@@ -270,7 +271,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
 
         # joints_3d_visible
         joints_3d_visible = np.ones_like(data, dtype=np.float32)
-        joints_3d_visible[joints_world == 0] = 0.0
+        joints_3d_visible[joints_3d == 0] = 0.0
         joints_3d_visible = joints_3d_visible.reshape([num_sample, num_joints, 3])
 
         roots_3d = data[:, 4, :]  # body_middle as root here

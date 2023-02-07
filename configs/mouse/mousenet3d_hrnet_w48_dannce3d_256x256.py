@@ -1,6 +1,6 @@
 _base_ = [
-    '../../_base_/default_runtime.py',
-    '../../_base_/mouse_datasets/mouse_dannce_3d.py'
+    '../_base_/default_runtime.py',
+    '../_base_/mouse_datasets/mouse_dannce_3d.py'
 ]
 
 # evaluation config
@@ -162,7 +162,7 @@ train_pipeline = [
     dict(
         type='DiscardDuplicatedItems',
         keys_list=[
-            'dataset', 'ann_info', 'roots_3d', 'joints_world', 'joints_world_visible', 'flip_pairs'
+            'dataset', 'ann_info', 'roots_3d', 'joints_4d', 'joints_4d_visible', 'flip_pairs'
         ]),
     dict(
         type='GroupCams',
@@ -174,7 +174,7 @@ train_pipeline = [
         meta_keys=[
             'image_file', 'joints_3d', 'joints_3d_visible', 'bbox',
             # 'center', 'scale', 'rotation', 'bbox_score', 'flip_pairs',
-            'joints_world', 'joints_world_visible', 'camera',
+            'joints_4d', 'joints_4d_visible', 'camera',
         ]),
 ]
 
@@ -230,7 +230,7 @@ data = dict(
     test_dataloader=dict(samples_per_gpu=4),
     train=dict(
         type='MouseDannce3dDataset',
-        ann_file=f'{data_root}/annotations_train930.json',
+        ann_file=f'{data_root}/annotations_visible_train930_new.json',
         ann_3d_file=f'{data_root}/joints_3d.json',
         cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
@@ -240,7 +240,7 @@ data = dict(
 
     eval=dict(
         type='MouseDannce2dDatasetSview',
-        ann_file=f'{data_root}/annotations_eval930.json',
+        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
         ann_3d_file=f'{data_root}/joints_3d.json',
         cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
@@ -250,7 +250,7 @@ data = dict(
 
     test=dict(
         type='MouseDannce2dDatasetSview',
-        ann_file=f'{data_root}/annotations_eval930.json',
+        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
         ann_3d_file=f'{data_root}/joints_3d.json',
         cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
