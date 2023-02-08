@@ -17,7 +17,7 @@ from .hand import (FreiHandDataset, HandCocoWholeBodyDataset,
                    PanopticDataset)
 from .mesh import (MeshAdversarialDataset, MeshH36MDataset, MeshMixDataset,
                    MoshDataset)
-from .mouse import MouseDannce3dDataset, Mouse12292dDatasetSview
+from .mouse import (MouseDannce3dDataset, Mouse12292dDatasetSview)
 from .top_down import (TopDownAicDataset, TopDownCocoDataset,
                        TopDownCocoWholeBodyDataset, TopDownCrowdPoseDataset,
                        TopDownH36MDataset, TopDownHalpeDataset,

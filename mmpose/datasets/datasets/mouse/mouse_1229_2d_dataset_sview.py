@@ -5,7 +5,6 @@ from collections import OrderedDict, defaultdict
 
 import json_tricks as json
 import numpy as np
-from icecream import ic
 from mmcv import Config, deprecated_api_warning
 from xtcocotools.cocoeval import COCOeval
 
@@ -35,7 +34,6 @@ class Mouse12292dDatasetSview(Kpt2dSviewRgbImgTopDownDataset):
             dataset_info=dataset_info,
             test_mode=test_mode)
 
-        ic(self.img_ids)
         self.use_gt_bbox = data_cfg['use_gt_bbox']
         self.bbox_file = data_cfg['bbox_file']
         self.det_bbox_thr = data_cfg.get('det_bbox_thr', 0.0)
