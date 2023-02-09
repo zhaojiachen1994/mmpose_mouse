@@ -12,7 +12,7 @@ from mmpose.apis.webcam.nodes import model_nodes
 def parse_args():
     parser = ArgumentParser('Webcam executor configs')
     parser.add_argument(
-        '--config', type=str, default='demo/webcam_cfg/pose_estimation.py')
+        '--config', type=str, default='webcam_cfg/pose_estimation.py')
 
     parser.add_argument(
         '--cfg-options',
