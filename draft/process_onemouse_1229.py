@@ -228,16 +228,40 @@ if __name__ == "__main__":
     # rename_images(path)
 
     # create json files
-    for i in [0, 1, 2, 3, 4, 5]:
-        total_anno = dlc2coco(f"{path}/20221229-1-cam{i}", i, joint_name, skeleton)
-        total_anno = json.dumps(total_anno, indent=1)
-        anno_file = f"{path}/anno_20221229-1-cam{i}.json"
-        with open(anno_file, "w", newline='\n') as f:
-            f.write(total_anno)
+    # for i in [0, 1, 2, 3, 4, 5]:
+    #     total_anno = dlc2coco(f"{path}/20221229-1-cam{i}", i, joint_name, skeleton)
+    #     total_anno = json.dumps(total_anno, indent=1)
+    #     anno_file = f"{path}/anno_20221229-1-cam{i}.json"
+    #     with open(anno_file, "w", newline='\n') as f:
+    #         f.write(total_anno)
 
     # combine all json files
+    # total_anno_file = f"{path}/anno_20221229-1-012345.json"
+    # total_anno = combine_json_multi_cams(path, cams=[0, 1, 2, 3, 4, 5])
+    # total_anno = json.dumps(total_anno, indent=1)
+    # with open(total_anno_file, "w", newline='\n') as f:
+    #     f.write(total_anno)
+
+    # split train and evaluation files
     total_anno_file = f"{path}/anno_20221229-1-012345.json"
-    total_anno = combine_json_multi_cams(path, cams=[0, 1, 2, 3, 4, 5])
-    total_anno = json.dumps(total_anno, indent=1)
-    with open(total_anno_file, "w", newline='\n') as f:
-        f.write(total_anno)
+    with open(total_anno_file, 'r') as f:
+        total_anno = json.load(f)
+    ic(total_anno.keys())
+    ic(len(total_anno['annotations']))
+
+    train_anno = {
+        'annotations': total_anno['annotations'][:540],
+        'images': total_anno['images'][:540],
+        'categories': total_anno['categories']
+    }
+    train_anno_file = f"{path}/anno_20221229-1-012345_train.json"
+    with open(train_anno_file, "w") as f:
+        json.dump(train_anno, f)
+
+    eval_anno = {
+        'annotations': total_anno['annotations'][540:],
+        'images': total_anno['images'][540:],
+        'categories': total_anno['categories']}
+    eval_anno_file = f"{path}/anno_20221229-1-012345_test.json"
+    with open(eval_anno_file, "w") as f:
+        json.dump(eval_anno, f)

@@ -1,6 +1,6 @@
 _base_ = [
-    '../../../../_base_/default_runtime.py',
-    '../../../../_base_/mouse_datasets/mouse_one_1229.py'
+    '../_base_/default_runtime.py',
+    '../_base_/mouse_datasets/mouse_one_1229.py'
 ]
 
 evaluation = dict(interval=2, metric='mAP', save_best='AP')
@@ -150,13 +150,13 @@ test_pipeline = eval_pipeline
 
 data_root = "D:/Datasets/transfer_mouse/onemouse1229"
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=16,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=32),
-    test_dataloader=dict(samples_per_gpu=32),
+    val_dataloader=dict(samples_per_gpu=16),
+    test_dataloader=dict(samples_per_gpu=16),
     train=dict(
         type='Mouse12292dDatasetSview',
-        ann_file=f'{data_root}/anno_20221229-1-012345.json',
+        ann_file=f'{data_root}/anno_20221229-1-012345_train.json',
         img_prefix=f'{data_root}/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
@@ -164,7 +164,7 @@ data = dict(
 
     val=dict(
         type='Mouse12292dDatasetSview',
-        ann_file=f'{data_root}/anno_20221229-1-012345.json',
+        ann_file=f'{data_root}/anno_20221229-1-012345_test.json',
         img_prefix=f'{data_root}/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
@@ -172,7 +172,7 @@ data = dict(
 
     test=dict(
         type='Mouse12292dDatasetSview',
-        ann_file=f'{data_root}/anno_20221229-1-012345.json',
+        ann_file=f'{data_root}/anno_20221229-1-012345_test.json',
         img_prefix=f'{data_root}/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,

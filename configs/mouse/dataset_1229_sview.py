@@ -80,10 +80,10 @@ test_pipeline = eval_pipeline
 
 data_root = "D:/Datasets/transfer_mouse/onemouse1229"
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=8,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=32),
-    test_dataloader=dict(samples_per_gpu=32),
+    val_dataloader=dict(samples_per_gpu=4),
+    test_dataloader=dict(samples_per_gpu=4),
     train=dict(
         type='Mouse12292dDatasetSview',
         ann_file=f'{data_root}/anno_20221229-1-012345.json',
