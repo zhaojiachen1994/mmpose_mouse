@@ -70,9 +70,9 @@ def main():
     pose_config = "D:/Pycharm Projects-win/mm_mouse/mmpose/configs/mouse/" \
                   "hrnet_w48_mouse_1229_256x256.py"
     pose_checkpoint = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/" \
-                      "latest.pth"
+                      "best_AP_epoch_90.pth"  # "latest.pth"
 
-    img_file = "D:/Datasets/transfer_mouse/onemouse1229/20221229-1-cam2/img0125.png"
+    img_file = "D:/Datasets/transfer_mouse/onemouse1229/20221229-1-cam4/img0125.png"
     # img_file = "D:/Datasets/transfer_mouse/dannce_20230130/images_gray/mouse0_003118_0.png"
     out_file = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/results/a.png"
 
@@ -119,8 +119,9 @@ def main():
         return_heatmap=return_heatmap,
         outputs=output_layer_names)
 
-    ic(pose_results)
-
+    # ic(pose_results[0]['keypoints'][:4])
+    # pose_results[0]['keypoints'] = pose_results[0]['keypoints'][:4]
+    # ic(pose_results)
     # show the results
     vis_pose_result(
         pose_model,

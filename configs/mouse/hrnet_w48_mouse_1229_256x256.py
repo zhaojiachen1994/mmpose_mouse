@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/mouse_datasets/mouse_one_1229.py'
 ]
 
-evaluation = dict(interval=2, metric='mAP', save_best='AP')
+evaluation = dict(interval=10, metric='mAP', save_best='AP')
 
 optimizer = dict(
     type='Adam',
@@ -17,7 +17,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[170, 200])
-total_epochs = 5
+total_epochs = 300
 log_config = dict(
     interval=1,
     hooks=[
