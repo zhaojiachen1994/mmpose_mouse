@@ -293,7 +293,6 @@ def imshow_keypoints_3d(
         if kpts.shape[1] == 3:
             kpts = np.concatenate([kpts, np.ones((kpts.shape[0], 1))], axis=1)
         valid = kpts[:, 3] >= kpt_score_thr
-
         ax_idx = idx + 2 if show_img else idx + 1
         ax = fig.add_subplot(1, num_axis, ax_idx, projection='3d')
         ax.view_init(
@@ -458,6 +457,7 @@ def imshow_multiview_keypoints_3d(
     space_size=[8000, 8000, 2000],
     space_center=[0, -500, 800],
     kpt_score_thr=0.0,
+
 ):
     """Draw 3D keypoints and links in 3D coordinates.
 
@@ -484,6 +484,10 @@ def imshow_multiview_keypoints_3d(
                   space_center[1] + space_size[1] * 0.5)
     ax.set_zlim3d(space_center[2] - space_size[2] * 0.5,
                   space_center[2] + space_size[2] * 0.5)
+    # ax.view_init(
+    #     elev=axis_elev,
+    #     azim=axis_azimuth,
+    # )
     pose_kpt_color = np.array(pose_kpt_color)
     pose_kpt_color = pose_kpt_color[..., ::-1] / 255.
 

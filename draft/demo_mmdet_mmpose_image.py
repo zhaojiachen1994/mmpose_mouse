@@ -43,7 +43,7 @@ def parse_args():
         default=0.3,
         help='Bounding box score threshold')
     parser.add_argument(
-        '--kpt-thr', type=float, default=0.3, help='Keypoint score threshold')
+        '--kpt-thr', type=float, default=0.6, help='Keypoint score threshold')
     parser.add_argument(
         '--radius',
         type=int,
@@ -72,7 +72,7 @@ def main():
     pose_checkpoint = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/" \
                       "best_AP_epoch_90.pth"  # "latest.pth"
 
-    img_file = "D:/Datasets/transfer_mouse/onemouse1229/20221229-1-cam4/img0125.png"
+    img_file = "D:/Datasets/transfer_mouse/onemouse1229/20221229-1-cam0/img0125.png"
     # img_file = "D:/Datasets/transfer_mouse/dannce_20230130/images_gray/mouse0_003118_0.png"
     out_file = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/results/a.png"
 
@@ -98,7 +98,7 @@ def main():
 
     # keep the person class bounding boxes.
     mouse_results = process_mmdet_results(mmdet_results, args.det_cat_id)
-    ic(mouse_results)
+
 
     # test a single image, with a list of bboxes.
 
@@ -121,7 +121,8 @@ def main():
 
     # ic(pose_results[0]['keypoints'][:4])
     # pose_results[0]['keypoints'] = pose_results[0]['keypoints'][:4]
-    # ic(pose_results)
+    ic(pose_results)
+
     # show the results
     vis_pose_result(
         pose_model,
