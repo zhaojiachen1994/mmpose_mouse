@@ -98,7 +98,7 @@ def main():
 
     # keep the person class bounding boxes.
     mouse_results = process_mmdet_results(mmdet_results, args.det_cat_id)
-
+    ic(mouse_results)
 
     # test a single image, with a list of bboxes.
 
