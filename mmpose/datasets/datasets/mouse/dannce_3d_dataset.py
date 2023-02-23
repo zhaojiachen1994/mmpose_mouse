@@ -8,6 +8,7 @@ import warnings
 from collections import OrderedDict, defaultdict
 
 import numpy as np
+from mmcv import Config
 from xtcocotools.coco import COCO
 from xtcocotools.cocoeval import COCOeval
 
@@ -166,7 +167,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                     'bbox_id': bbox_id
                 })
                 bbox_id = bbox_id + 1
-            gt_db.extend(rec)
+            gt_db.append(rec)
         return gt_db
 
     def evaluate(self, results, res_folder=None, metric='mAP', **kwargs):
