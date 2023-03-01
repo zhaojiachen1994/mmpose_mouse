@@ -13,11 +13,12 @@ from .one_stage import DisentangledKeypointRegressor
 from .pose_lifter import PoseLifter
 from .posewarper import PoseWarper
 from .top_down import TopDown
+from .triangnet import TriangNet
 
 __all__ = [
     'TopDown', 'AssociativeEmbedding', 'CID', 'ParametricMesh', 'MultiTask',
     'PoseLifter', 'Interhand3D', 'PoseWarper', 'DetectAndRegress',
     'VoxelCenterDetector', 'VoxelSinglePose', 'GestureRecognizer',
     'DisentangledKeypointRegressor',
-    'MouseNet_3d', 'MouseNet_2d'
+    'MouseNet_3d', 'MouseNet_2d', 'TriangNet'
 ]

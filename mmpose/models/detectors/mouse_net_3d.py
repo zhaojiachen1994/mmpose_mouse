@@ -1,13 +1,12 @@
 # the original my_top_down.py
 # modified from top_down model
 
+import warnings
+
 import mmcv
 import numpy as np
 import torch
-import warnings
-from icecream import ic
 from mmcv.image import imwrite
-from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
 
 from mmpose.core import imshow_bboxes, imshow_keypoints
@@ -192,9 +191,9 @@ class MouseNet_3d(BasePose):
         """Defines the computation performed at every call when testing"""
         [bs, num_cams, num_channel, h_img, w_img] = img.shape
         img = img.reshape(-1, *img.shape[2:])
-
+        h_img, w_img = img.shape[-2], img.shape[-1]
         result = {}
-        features = self.backnone(img)
+        features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(features)  # for triangulate-head input
             output_heatmap = self.keypoint_head.inference_model(
@@ -208,7 +207,7 @@ class MouseNet_3d(BasePose):
                     features_flipped, img_metas[0]['flip_pairs'])
                 output_heatmap = (output_heatmap + output_flipped_heatmap)
                 if self.test_cfg.get('regression_flip_shift', False):
-                    output_heatmap[..., 0] -= 1.0 / img_width
+                    output_heatmap[..., 0] -= 1.0 / w_img
                 output_heatmap = output_heatmap / 2
 
         if self.with_keypoint_head:
@@ -217,7 +216,7 @@ class MouseNet_3d(BasePose):
             result['output_heatmap'] = output_heatmap
 
         if self.with_triang:
-            kp_3d, res_triang, _, _ = self.triangulate_head(heatmap, proj_metrices)
+            kp_3d, res_triang, _, _ = self.triangulate_head(heatmap, proj_matrices)
             result['kp_3d'] = kp_3d.detach().cpu().numpy()
             result['res_triang'] = res_triang.detach().cpu().numpy()
         return result

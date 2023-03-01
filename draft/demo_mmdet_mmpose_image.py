@@ -1,5 +1,7 @@
 # demo/top_down_img_demo_with_mmdet.py
-
+# import sys
+# sys.path.append("D:\\Pycharm Projects-win\\mm_mouse\\mmdetection\\mmdet")
+# print(sys.path)
 import warnings
 from argparse import ArgumentParser
 

@@ -52,7 +52,6 @@ class TopdownHeatmapBaseHead(nn.Module):
             output (np.ndarray[N, K, H, W]): model predicted heatmaps.
         """
         batch_size = len(img_metas)
-
         if 'bbox_id' in img_metas[0]:
             bbox_ids = []
         else:

@@ -13,6 +13,76 @@ channel_cfg = dict(
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
     ])
 
+"""total model pretrain weights"""
+load_from = "D:/Pycharm Projects-win/mm_mouse/mmpose/official_checkpoint/hrnet_w48_h36m_256x256-78e88d08_20210621.pth"
+
+train_cfg = dict(
+    supervised_2d=True,  # use the 2d ground truth to train keypoint_head
+    contrastive_feature=True,  # use the sup_con_loss to train feature_head
+    supervised_3d=True,  # use the 3d ground truth to train triangulate_head
+    unSupervised_3d=False,  # use the triangulation residual loss to train triangulate_head
+),
+
+"""model config"""
+model = dict(
+    type='TriangNet',
+    backbone=dict(
+        type='HRNet',
+        in_channels=3,
+        extra=dict(
+            stage1=dict(
+                num_modules=1,
+                num_branches=1,
+                block='BOTTLENECK',
+                num_blocks=(4,),
+                num_channels=(64,)),
+            stage2=dict(
+                num_modules=1,
+                num_branches=2,
+                block='BASIC',
+                num_blocks=(4, 4),
+                num_channels=(48, 96)),
+            stage3=dict(
+                num_modules=4,
+                num_branches=3,
+                block='BASIC',
+                num_blocks=(4, 4, 4),
+                num_channels=(48, 96, 192)),
+            stage4=dict(
+                num_modules=3,
+                num_branches=4,
+                block='BASIC',
+                num_blocks=(4, 4, 4, 4),
+                num_channels=(48, 96, 192, 384))),
+    ),
+    keypoint_head=dict(
+        type='TopdownHeatmapSimpleHead',
+        in_channels=48,
+        out_channels=channel_cfg['num_output_channels'],
+        num_deconv_layers=0,
+        extra=dict(final_conv_kernel=1, ),
+        loss_keypoint=dict(type='JointsMSELoss', use_target_weight=True)),
+
+    triangulate_head=dict(
+        type='TriangulateHead',
+        num_cams=4,
+        img_shape=[256, 256],
+        heatmap_shape=[64, 64],
+        softmax_heatmap=True,
+        loss_3d_super=dict(type='MSELoss',
+                           use_target_weight=True,
+                           loss_weight=1.),
+        train_cfg=train_cfg,
+    ),
+
+    test_cfg=dict(
+        flip_test=False,
+        post_process='default',
+        shift_heatmap=True,
+        modulate_kernel=11)
+
+)
+
 # data settings
 data_root = "D:/Datasets/h36m_dataset/human3.6m_parse"
 data_cfg = dict(
@@ -102,9 +172,10 @@ train_pipeline = [
             dict(type='LoadImageFromFile'),
             dict(type='SquareBbox'),
             dict(type='CropImage',
-                 update_camera=False),
+                 update_camera=True),
             dict(type='ResizeImage',
-                 update_camera=False),
+                 update_camera=True),
+            dict(type='ComputeProjMatric'),
             dict(type='ToTensor'),
             dict(
                 type='NormalizeTensor',
@@ -115,27 +186,28 @@ train_pipeline = [
     dict(
         type='DiscardDuplicatedItems',
         keys_list=[
-            'dataset', 'ann_info', 'joints_4d'
+            'dataset', 'ann_info', 'joints_4d',
+            'subject', 'action_idx', 'subaction_idx', 'frame_idx'
         ]),
     dict(
         type='GroupCams',
-        keys=['img', 'target', 'target_weight']
+        keys=['img', 'target', 'target_weight', 'proj_mat', 'joints_3d']
     ),
     dict(
         type="Collect",
-        keys=['img', 'target', 'target_weight', 'joints_4d'],
-        meta_keys=['image_file']
+        keys=['img', 'target', 'target_weight', 'joints_4d', 'proj_mat', 'joints_3d'],
+        meta_keys=['image_file', 'subject', 'action_idx', 'subaction_idx', 'frame_idx']
     )
 ]
 
 data = dict(
-    samples_per_gpu=20,
+    samples_per_gpu=5,
     workers_per_gpu=2,
     val_dataloader=dict(samples_per_gpu=64),
     test_dataloader=dict(samples_per_gpu=64),
     train=dict(
         type="Body3DH36MMviewDataset",
-        ann_file=f"{data_root}/annotations/Human36M_subject1_joint_2d.json",
+        ann_file=f"{data_root}/annotations/Human36M_subject1_data_reorder.json",
         ann_3d_file=f"{data_root}/annotations/Human36M_subject1_joint_3d.json",
         cam_file=f"{data_root}/annotations/Human36M_subject1_camera.json",
         img_prefix=f"{data_root}/images/",

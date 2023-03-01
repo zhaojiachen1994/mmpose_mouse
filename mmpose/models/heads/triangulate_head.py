@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from icecream import ic
 
 from mmpose.models.builder import build_loss
 from ..builder import HEADS
@@ -55,7 +54,7 @@ class TriangulateHead(nn.Module):
         self.softmax = softmax_heatmap
 
         if loss_3d_super is not None:
-            if train_cfg.get('supervised_3d', True):
+            # if train_cfg.get('supervised_3d', True):
                 self.super_loss = build_loss(loss_3d_super)
 
     def compute_kp_coords(self, heatmap):
@@ -148,6 +147,7 @@ class TriangulateHead(nn.Module):
             kp_3d: triangulation results, keypoint 3d coordinates, [bs, n_joints, 3]
             res_triang: triangulation residual, [bs, n_joints]
         """
+
         kp_2d_heatmap, kp_2d_croped = self.compute_kp_coords(heatmap)  # [bs*num_cams, num_joints, 2]
         kp_2d_croped = kp_2d_croped.reshape(
             [-1, self.num_cams, *kp_2d_croped.shape[1:]])  # [bs, num_cams, num_joints, 2]

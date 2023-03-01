@@ -167,7 +167,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                     'bbox_id': bbox_id
                 })
                 bbox_id = bbox_id + 1
-            gt_db.append(rec)
+            gt_db.extend(rec)
         return gt_db
 
     def evaluate(self, results, res_folder=None, metric='mAP', **kwargs):

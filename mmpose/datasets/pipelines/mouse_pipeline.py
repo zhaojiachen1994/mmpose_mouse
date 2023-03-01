@@ -1,18 +1,16 @@
-from PIL import Image
+import cv2
 import numpy as np
 import torch
-import cv2
-from icecream import ic
-from mmpose.datasets import PIPELINES
-from mmpose.core.bbox import bbox_xywh2xyxy
+from PIL import Image
 
+from mmpose.datasets import PIPELINES
 
 
 @PIPELINES.register_module()
 class DummyTransform:
-   def __call__(self, results):
-       results['dummy'] = True
-       return results
+    def __call__(self, results):
+        results['dummy'] = True
+        return results
 
 
 @PIPELINES.register_module()
@@ -65,7 +63,6 @@ class CropImage:
     def __init__(self, update_camera=False):
         self.update_camera = update_camera
 
-
     def __call__(self, results):
         image_pil = Image.fromarray(results['img'])
         image_pil = image_pil.crop(results['bbox'])
@@ -79,15 +76,15 @@ class CropImage:
         joint_3d[:, 1] = joint_3d[:, 1] - upper
         results['joints_3d'] = joint_3d
 
-
         if self.update_camera:
-            camera = results['camera']
+            camera = results['camera_0']
             left, upper, right, lower = results['bbox']
             cx, cy = camera['K'][0, 2], camera['K'][1, 2]
 
             new_cx = cx - left
             new_cy = cy - upper
-            camera['K'][0, 2], camera['K'][1, 2] = new_cx, new_cy
+            results['camera']['K'][0, 2], results['camera']['K'][1, 2] = new_cx, new_cy
+
         return results
 
 
@@ -100,6 +97,7 @@ class ResizeImage:
         self.update_camera = update_camera
 
     def __call__(self, results):
+        # ic(results['image_file'], results['cam_idx'], results['frame_idx'],results['camera']['K'] )
         img = results['img']
         [height_old, width_old, _] = img.shape
 
@@ -111,7 +109,6 @@ class ResizeImage:
         results['joints_3d'][:, 1] = results['joints_3d'][:, 1] * (new_width / width_old)
 
         if self.update_camera:
-
             camera = results['camera']
             fx, fy, cx, cy = camera['K'][0, 0], camera['K'][1, 1], camera['K'][0, 2], camera['K'][1, 2]
             new_fx = fx * (new_width / width_old)
@@ -122,6 +119,8 @@ class ResizeImage:
             results['camera']['K'][1, 1], \
             results['camera']['K'][0, 2], \
             results['camera']['K'][1, 2] = new_fx, new_fy, new_cx, new_cy
+        # ic(results['image_file'], results['cam_idx'], results['frame_idx'], results['camera']['K'])
+
         return results
 
 
@@ -152,13 +151,14 @@ class ComputeProjMatric:
     """
     def __call__(self, results):
         n_cams = len(results['camera'])
-        # proj_metric = np.zeros([n_cams, 3, 4])
+        proj_metric = np.zeros([n_cams, 3, 4])
         # ic(results['camera']['K'].shape)
         # ic(results['camera']['R'].shape)
         # ic(results['camera']['T'].shape)
         # ic(np.hstack([results['camera'][0]['R'], np.transpose(results['camera'][0]['T'])]))
-        proj_metric = results['camera']['K'].dot(np.hstack([results['camera']['R'], np.transpose(results['camera']['T'])]))
+        proj_metric = results['camera']['K'].dot(np.hstack([results['camera']['R'], results['camera']['T']]))
         # proj_metric = [params['K'].dot(np.hstack([params['R'], np.transpose(params['T'])])) for params in
         #                results['camera']]
-        results['proj_metric'] = proj_metric
+        results['proj_mat'] = proj_metric
+        # ic(results['image_file'], results['cam_idx'], results['frame_idx'], results['proj_mat'], results['camera']['K'])
         return results
