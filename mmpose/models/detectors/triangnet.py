@@ -112,8 +112,8 @@ class TriangNet(BasePose):
         """
         if return_loss:
             return self.forward_train(img,
-                                      img_metas,
                                       proj_matrices,
+                                      img_metas,
                                       target,
                                       target_weight,
                                       **kwargs
@@ -121,12 +121,12 @@ class TriangNet(BasePose):
         else:
             return self.forward_test(
                 img,
-                img_metas,
                 proj_matrices,
+                img_metas,
                 return_heatmap,
                 **kwargs)
 
-    def forward_train(self, img, img_metas, proj_matrices, target,
+    def forward_train(self, img, proj_matrices, img_metas, target,
                       target_weight, kpt_3d_gt, **kwargs):
         """Defines the computation performed at every call when training.
                 img: input image [bs, num_cams, num_channel, h_img, w_img]
@@ -162,7 +162,7 @@ class TriangNet(BasePose):
             losses.update(sup_3d_loss)
         return losses
 
-    def forward_test(self, img, img_metas, proj_matrices, return_heatmap, **kwargs):
+    def forward_test(self, img, proj_matrices, img_metas, return_heatmap, **kwargs):
         """Defines the computation performed at every call when testing"""
         [bs, num_cams, num_channel, h_img, w_img] = img.shape
         img = img.reshape(-1, *img.shape[2:])
@@ -191,11 +191,45 @@ class TriangNet(BasePose):
             result['output_heatmap'] = output_heatmap
 
         if self.with_triangulate_head:
-            kp_3d, res_triang, _, _ = self.triangulate_head(heatmap, proj_matrices)
+            kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_matrices)
             result['preds'] = kp_3d.detach().cpu().numpy()
+            result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()
             result['res_triang'] = res_triang.detach().cpu().numpy()
-        result['img_metas'] = img_metas.data[0]
+
+        if img_metas is not None:
+            result['img_metas'] = img_metas.data[0]  # using the img_metas to get the 3d global ground truth
         return result
 
-    def show_result(self, **kwargs):
-        pass
+    def show_result(self,
+                    imgs,
+                    img_metas,
+                    result,
+                    skeleton=None,
+                    visualize_2d=False,
+                    dataset_info=None,
+                    wait_time=0,
+                    out_file=None,
+                    show=False,
+                    **kwargs):
+        """
+        Args:
+            imgs: tensor or array, the image to visualize 2D keypoints, [bs, num_cams, 3, 256, 256]
+            result:
+            skeleton:
+            visualize_2d:
+            dataset_info:
+            wait_time:
+            out_file:
+            show:
+            **kwargs:
+
+        Returns:
+
+        """
+
+        pose_3d = result['preds']  # [bs, num_joints, 3]
+        bs = imgs.shape[0]
+        num_cameras = imgs.shape[1]
+        for i in range(bs):
+            pose_3d_i = pose_3d[i]
+            pose_3d_list = [pose_3d_i]

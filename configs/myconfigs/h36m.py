@@ -99,10 +99,10 @@ data_cfg = dict(
     use_gt_bbox=True,
     det_bbox_thr=0.0,
     bbox_file='',
-    space_size=[0, 0, 0],
+    space_size=[4000, 4000, 3000],
     space_center=[0, 0, 0],
-    cube_size=[0, 0, 0],
-    num_cameras=6,
+    cube_size=[40, 40, 30],
+    num_cameras=4,
     use_different_joint_weights=False
 
 )
@@ -191,14 +191,18 @@ train_pipeline = [
         ]),
     dict(
         type='GroupCams',
-        keys=['img', 'target', 'target_weight', 'proj_mat', 'joints_3d']
+        keys=['img', 'target', 'target_weight', 'proj_mat', 'joints_3d', 'bbox']
     ),
     dict(
         type="Collect",
         keys=['img', 'target', 'target_weight', 'joints_4d', 'proj_mat', 'joints_3d'],
-        meta_keys=['image_file', 'subject', 'action_idx', 'subaction_idx', 'frame_idx']
+        meta_keys=['image_file', 'subject', 'action_idx', 'subaction_idx',
+                   'frame_idx', 'bbox_offset', 'resize_ratio']
     )
 ]
+
+val_pipeline = train_pipeline
+test_pipeline = val_pipeline
 
 data = dict(
     samples_per_gpu=5,
@@ -206,6 +210,26 @@ data = dict(
     val_dataloader=dict(samples_per_gpu=64),
     test_dataloader=dict(samples_per_gpu=64),
     train=dict(
+        type="Body3DH36MMviewDataset",
+        ann_file=f"{data_root}/annotations/Human36M_subject1_data_reorder.json",
+        ann_3d_file=f"{data_root}/annotations/Human36M_subject1_joint_3d.json",
+        cam_file=f"{data_root}/annotations/Human36M_subject1_camera.json",
+        img_prefix=f"{data_root}/images/",
+        data_cfg=data_cfg,
+        pipeline=train_pipeline,
+        dataset_info={{_base_.dataset_info}}),
+
+    val=dict(
+        type="Body3DH36MMviewDataset",
+        ann_file=f"{data_root}/annotations/Human36M_subject1_data_reorder.json",
+        ann_3d_file=f"{data_root}/annotations/Human36M_subject1_joint_3d.json",
+        cam_file=f"{data_root}/annotations/Human36M_subject1_camera.json",
+        img_prefix=f"{data_root}/images/",
+        data_cfg=data_cfg,
+        pipeline=train_pipeline,
+        dataset_info={{_base_.dataset_info}}),
+
+    test=dict(
         type="Body3DH36MMviewDataset",
         ann_file=f"{data_root}/annotations/Human36M_subject1_data_reorder.json",
         ann_3d_file=f"{data_root}/annotations/Human36M_subject1_joint_3d.json",

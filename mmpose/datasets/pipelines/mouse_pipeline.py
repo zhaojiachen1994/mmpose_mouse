@@ -50,7 +50,7 @@ class CropImage:
     """Crops area from image specified as bbox. Always returns area of size as bbox filling missing parts with zeros
 
         Required key: 'bbox', 'img', 'ann_info', 'joint_3d'; 'camera' if update_camera is True
-        Modified key: 'img'
+        Modified key: 'img', add 'bbox_offset'
 
         Args:
             image numpy array of shape (height, width, 3): input image
@@ -75,6 +75,7 @@ class CropImage:
         joint_3d[:, 0] = joint_3d[:, 0] - left
         joint_3d[:, 1] = joint_3d[:, 1] - upper
         results['joints_3d'] = joint_3d
+        results['bbox_offset'] = results['bbox'][:2]
 
         if self.update_camera:
             camera = results['camera_0']
@@ -107,6 +108,8 @@ class ResizeImage:
         # update the ground truth 2d keypoint coord
         results['joints_3d'][:, 0] = results['joints_3d'][:, 0] * (new_width / width_old)
         results['joints_3d'][:, 1] = results['joints_3d'][:, 1] * (new_width / width_old)
+        # save the resize ratio
+        results['resize_ratio'] = new_width / width_old
 
         if self.update_camera:
             camera = results['camera']
