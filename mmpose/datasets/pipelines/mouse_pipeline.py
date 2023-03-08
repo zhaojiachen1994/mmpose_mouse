@@ -159,7 +159,9 @@ class ComputeProjMatric:
         # ic(results['camera']['R'].shape)
         # ic(results['camera']['T'].shape)
         # ic(np.hstack([results['camera'][0]['R'], np.transpose(results['camera'][0]['T'])]))
-        proj_metric = results['camera']['K'].dot(np.hstack([results['camera']['R'], results['camera']['T']]))
+
+        proj_metric = results['camera']['K'].dot(np.hstack([results['camera']['R'],
+                                                            results['camera']['T'].reshape([3, 1])]))
         # proj_metric = [params['K'].dot(np.hstack([params['R'], np.transpose(params['T'])])) for params in
         #                results['camera']]
         results['proj_mat'] = proj_metric

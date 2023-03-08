@@ -52,6 +52,7 @@ class TriangulateHead(nn.Module):
         [self.h_img, self.w_img] = img_shape
         [self.h_map, self.w_map] = heatmap_shape
         self.softmax = softmax_heatmap
+        self.det_conf_thr = 0.8  # weather use the 2d detect confidence to mask the fail detection points
 
         if loss_3d_super is not None:
             # if train_cfg.get('supervised_3d', True):
@@ -64,20 +65,21 @@ class TriangulateHead(nn.Module):
             heatmap: [bs*num_cams, num_joints, h_map, w_map]
 
         Returns:
-            kp_2d_heatmap: keypoint coordinates in the heatmap size, [bs*num_cams, num_joints, 2]
-            kp_2d_croped: keypoint coordinates in the croped image size, [bs*num_cams, num_joints, 2]
+            kp_2d_heatmap: keypoint coordinates in the heatmap size, [bs*num_cams, num_joints, 3]
+            kp_2d_croped: keypoint coordinates in the croped image size, [bs*num_cams, num_joints, 3]
         """
 
         heatmap = heatmap * 100.0
         # compute the 2d keypoint coordinate in the heatmap size
         heatmap = heatmap.reshape((*heatmap.shape[:2], -1))
+
         if self.softmax:
             heatmap = nn.functional.softmax(heatmap, dim=2)
         else:
             heatmap = nn.functional.relu(heatmap)
         #     print("=============No==============")
-        # maxvals = torch.amax(heatmap, 2).reshape((*heatmap.shape[:2], 1))
-        # ic(maxvals)
+        confidence = torch.amax(heatmap, 2) / torch.sum(heatmap, 2)
+        confidence = torch.unsqueeze(confidence, -1)
 
         heatmap = heatmap.reshape((*heatmap.shape[:2], self.h_map, self.w_map))
 
@@ -94,14 +96,16 @@ class TriangulateHead(nn.Module):
             x = x / mass_x.sum(dim=2, keepdim=True)
             y = y / mass_y.sum(dim=2, keepdim=True)
 
-        coordinates = torch.cat((x, y), dim=2)
-        kp_2d_heatmap = coordinates.reshape((*heatmap.shape[:2], 2))  # [bs*num_cams, num_joints, 2]
-
+        coordinates = torch.cat((x, y, confidence), dim=2)
+        kp_2d_heatmap = coordinates.reshape((*heatmap.shape[:2], 3))  # [bs*num_cams, num_joints, 3]
         # upscale the 2d coordinates from heatmap size to image size
-        kp_2d_croped = torch.zeros_like(kp_2d_heatmap)
+        kp_2d_croped = torch.zeros_like(kp_2d_heatmap, dtype=float)
         kp_2d_croped[:, :, 0] = kp_2d_heatmap[:, :, 0] * self.h_img / self.h_map
         kp_2d_croped[:, :, 1] = kp_2d_heatmap[:, :, 1] * self.w_img / self.w_map
-        return kp_2d_heatmap, kp_2d_croped
+        kp_2d_croped[:, :, 2] = kp_2d_heatmap[:, :, 2]
+        # coordinates[confidence < 0.8] = torch.nan
+        # ic(coordinates[confidence > 0.2])
+        return kp_2d_heatmap, kp_2d_croped,
 
     def triangulate_point(self, proj_matrices, points, confidences=None):
         # modified from learnable triangulation/multiview
@@ -147,8 +151,13 @@ class TriangulateHead(nn.Module):
             kp_3d: triangulation results, keypoint 3d coordinates, [bs, n_joints, 3]
             res_triang: triangulation residual, [bs, n_joints]
         """
+        kp_2d_heatmap, kp_2d_croped = self.compute_kp_coords(
+            heatmap)  # [bs*num_cams, num_joints, 3] with [x, y, confidence]
+        # if self.det_conf_thr is not None:
+        #     det_conf = kp_2d_croped[..., -1]
+        #     kp_2d_croped[det_conf < self.det_conf_thr] = torch.nan
+        #     ic(kp_2d_croped)
 
-        kp_2d_heatmap, kp_2d_croped = self.compute_kp_coords(heatmap)  # [bs*num_cams, num_joints, 2]
         kp_2d_croped = kp_2d_croped.reshape(
             [-1, self.num_cams, *kp_2d_croped.shape[1:]])  # [bs, num_cams, num_joints, 2]
         kp_2d_heatmap = kp_2d_heatmap.reshape([-1, self.num_cams, *kp_2d_heatmap.shape[1:]])
@@ -158,11 +167,23 @@ class TriangulateHead(nn.Module):
         res_triang = torch.zeros(batch_size, n_joints, dtype=torch.float32, device=kp_2d_croped.device)
         # confidences = confidences_batch[batch_i, :, joint_i] if confidences_batch is not None else None
         confidences = None
-        for batch_i in range(batch_size):
-            for joint_i in range(n_joints):
-                points = kp_2d_croped[batch_i, :, joint_i, :]  # a joint in all views
-                kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = self.triangulate_point(proj_matrices[batch_i],
-                                                                                               points, confidences)
+        if self.det_conf_thr is not None:
+            for batch_i in range(batch_size):
+                for joint_i in range(n_joints):
+                    cams_detected = kp_2d_croped[batch_i, :, joint_i, 2] > self.det_conf_thr
+                    cam_idx = torch.where(cams_detected)[0]
+                    points = kp_2d_croped[batch_i, cam_idx, joint_i, :2]  # a joint in all views
+                    # ic(cam_idx, points.shape, proj_matrices.shape)
+                    if torch.sum(cams_detected) < 2:
+                        continue
+                    kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = \
+                        self.triangulate_point(proj_matrices[batch_i, cam_idx], points, confidences)
+        else:
+            for batch_i in range(batch_size):
+                for joint_i in range(n_joints):
+                    points = kp_2d_croped[batch_i, :, joint_i, :2]  # a joint in all views
+                    kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = \
+                        self.triangulate_point(proj_matrices[batch_i], points, confidences)
         return kp_3d, res_triang, kp_2d_croped, kp_2d_heatmap
 
     def get_sup_loss(self, output, target, target_weight):

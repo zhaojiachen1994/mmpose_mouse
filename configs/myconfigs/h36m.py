@@ -74,13 +74,11 @@ model = dict(
                            loss_weight=1.),
         train_cfg=train_cfg,
     ),
-
     test_cfg=dict(
         flip_test=False,
         post_process='default',
         shift_heatmap=True,
         modulate_kernel=11)
-
 )
 
 # data settings
@@ -104,7 +102,6 @@ data_cfg = dict(
     cube_size=[40, 40, 30],
     num_cameras=4,
     use_different_joint_weights=False
-
 )
 
 # 3D joint normalization parameters
@@ -186,8 +183,8 @@ train_pipeline = [
     dict(
         type='DiscardDuplicatedItems',
         keys_list=[
-            'dataset', 'ann_info', 'joints_4d',
-            'subject', 'action_idx', 'subaction_idx', 'frame_idx'
+            'dataset', 'ann_info', 'joints_4d', 'joints_4d_visible'
+                                                'subject', 'action_idx', 'subaction_idx', 'frame_idx'
         ]),
     dict(
         type='GroupCams',

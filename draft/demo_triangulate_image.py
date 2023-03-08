@@ -252,7 +252,7 @@ def triangulate(image_coordinates, projection_matrices):
     return u_3d
 
 
-def triangulate_joints(keypoints_mview, projection_matrices, dataset_info, args):
+def triangulate_joints(keypoints_mview, projection_matrices, num_joint, kpt_thr):
     """
     perform triangulation on the multiview mmpose estimation results for a frame
     keypoints_mview: [num_cams, num_joints, 3], [x, y, score]
@@ -260,12 +260,12 @@ def triangulate_joints(keypoints_mview, projection_matrices, dataset_info, args)
     returns: keypoints_3d [num_joints, 3]
     """
     # num_obj = pose_mview[0][0]['keypoints'].shape[0]
-    num_joint = dataset_info.keypoint_num
+    # num_joint = dataset_info.keypoint_num
     keypoints_3d = np.empty([num_joint, 3])
     keypoints_3d.fill(np.nan)
     # keypoints_mview = np.array([pose_mview[i][0]['keypoints'] for i in range(num_cams)])    #[num_cams, num_joints, 3], [x, y, score]
     for j in range(num_joint):
-        cams_detected = keypoints_mview[:, j, 2] > args.kpt_thr
+        cams_detected = keypoints_mview[:, j, 2] > kpt_thr
         cam_idx = np.where(cams_detected)[0]
         if np.sum(cams_detected) < 2:
             continue

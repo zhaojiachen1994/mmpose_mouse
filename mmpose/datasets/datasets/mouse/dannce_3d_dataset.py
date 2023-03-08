@@ -292,7 +292,6 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
             results[c] = result
         return self.pipeline(results)
 
-
     def _write_coco_keypoint_results(self, keypoints, res_file):
         """helper function for evaluate, Write results into a json file."""
         data_pack = [{

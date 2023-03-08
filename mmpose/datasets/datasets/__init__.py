@@ -19,7 +19,7 @@ from .hand import (FreiHandDataset, HandCocoWholeBodyDataset,
                    PanopticDataset)
 from .mesh import (MeshAdversarialDataset, MeshH36MDataset, MeshMixDataset,
                    MoshDataset)
-from .mouse import (MouseDannce3dDataset, Mouse12292dDatasetSview)
+from .mouse import (MouseDannce3dDataset, Mouse12292dDatasetSview, Mouse12293dDatasetMview)
 from .top_down import (TopDownAicDataset, TopDownCocoDataset,
                        TopDownCocoWholeBodyDataset, TopDownCrowdPoseDataset,
                        TopDownH36MDataset, TopDownHalpeDataset,
@@ -49,5 +49,6 @@ __all__ = [
     'TopDownHalpeDataset', 'TopDownPoseTrack18VideoDataset',
     'Body3DMviewDirectPanopticDataset', 'Body3DMviewDirectShelfDataset',
     'Body3DMviewDirectCampusDataset', 'NVGestureDataset',
-    'MouseDannce3dDataset', 'Mouse12292dDatasetSview', 'Body3DH36MMviewDataset'
+    'MouseDannce3dDataset', 'Mouse12292dDatasetSview', 'Body3DH36MMviewDataset',
+    'Mouse12293dDatasetMview'
 ]
