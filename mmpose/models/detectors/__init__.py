@@ -13,6 +13,7 @@ from .one_stage import DisentangledKeypointRegressor
 from .pose_lifter import PoseLifter
 from .posewarper import PoseWarper
 from .top_down import TopDown
+from .top_down_mview import TopDownMview
 from .triangnet import TriangNet
 
 __all__ = [
@@ -20,5 +21,5 @@ __all__ = [
     'PoseLifter', 'Interhand3D', 'PoseWarper', 'DetectAndRegress',
     'VoxelCenterDetector', 'VoxelSinglePose', 'GestureRecognizer',
     'DisentangledKeypointRegressor',
-    'MouseNet_3d', 'MouseNet_2d', 'TriangNet'
+    'MouseNet_3d', 'MouseNet_2d', 'TriangNet', 'TopDownMview'
 ]

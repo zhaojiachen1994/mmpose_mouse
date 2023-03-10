@@ -52,7 +52,7 @@ class TriangulateHead(nn.Module):
         [self.h_img, self.w_img] = img_shape
         [self.h_map, self.w_map] = heatmap_shape
         self.softmax = softmax_heatmap
-        self.det_conf_thr = 0.8  # weather use the 2d detect confidence to mask the fail detection points
+        self.det_conf_thr = 0.7  # weather use the 2d detect confidence to mask the fail detection points
 
         if loss_3d_super is not None:
             # if train_cfg.get('supervised_3d', True):

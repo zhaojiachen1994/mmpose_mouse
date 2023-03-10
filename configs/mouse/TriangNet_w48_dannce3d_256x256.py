@@ -1,17 +1,18 @@
 _base_ = [
     '../_base_/default_runtime.py',
-    '../_base_/mouse_datasets/mouse_one_1229.py'
+    '../_base_/mouse_datasets/mouse_dannce_3d.py'
 ]
 
 # joint channel config
 channel_cfg = dict(
-    num_output_channels=16,
-    dataset_joints=16,
+    num_output_channels=22,
+    dataset_joints=22,
     dataset_channel=[
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
     ],
     inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
+    ])
 
 """model config"""
 train_cfg = dict(
@@ -132,62 +133,42 @@ train_pipeline = [
         meta_keys=['image_file', 'bbox_offset', 'resize_ratio']
     )
 ]
-val_pipeline = [
-    dict(
-        type="MultiItemProcess",
-        pipeline=[
-            dict(type='LoadImageFromFile'),
-            dict(type='SquareBbox'),
-            dict(type='CropImage',
-                 update_camera=True),
-            dict(type='ResizeImage',
-                 update_camera=True),
-            dict(type='ComputeProjMatric'),
-            dict(type='ToTensor'),
-            dict(
-                type='NormalizeTensor',
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]),
-        ]),
-    dict(
-        type='DiscardDuplicatedItems',
-        keys_list=['dataset', 'ann_info', 'joints_4d', 'joints_4d_visible']
-    ),
-    dict(
-        type='GroupCams',
-        keys=['img', 'proj_mat']
-    ),
-    dict(
-        type="Collect",
-        keys=['img', 'proj_mat'],
-        meta_keys=['image_file', 'bbox_offset', 'resize_ratio']
-    )
-]
-test_pipeline = val_pipeline
+eval_pipeline = train_pipeline
+test_pipeline = eval_pipeline
 
-data_root = "D:/Datasets/transfer_mouse/onemouse1229"
+data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
 data = dict(
-    samples_per_gpu=5,
+    samples_per_gpu=4,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=64),
-    test_dataloader=dict(samples_per_gpu=64),
+    val_dataloader=dict(samples_per_gpu=4),
+    test_dataloader=dict(samples_per_gpu=4),
     train=dict(
-        type="Mouse12293dDatasetMview",
-        ann_file=f"{data_root}/anno_20221229-1-012345.json",
-        ann_3d_file=f"{data_root}/anno_20221229_joints_3d.json",
-        cam_file=f"{data_root}/calibration_adjusted.json",
-        img_prefix=f'{data_root}/',
+        type='MouseDannce3dDataset',
+        ann_file=f'{data_root}/annotations_visible_train930_new.json',
+        ann_3d_file=f'{data_root}/joints_3d.json',
+        cam_file=f'{data_root}/cams.pkl',
+        img_prefix=f'{data_root}/images_gray/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
-    val=dict(
-        type="Mouse12293dDatasetMview",
-        ann_file=f"{data_root}/anno_20221229-1-012345.json",
-        ann_3d_file=f"{data_root}/anno_20221229_joints_3d.json",
-        cam_file=f"{data_root}/calibration_adjusted.json",
-        img_prefix=f'{data_root}/',
-        data_cfg=data_cfg,
-        pipeline=val_pipeline,
-        dataset_info={{_base_.dataset_info}})
 
+    eval=dict(
+        type='MouseDannce2dDatasetSview',
+        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
+        ann_3d_file=f'{data_root}/joints_3d.json',
+        cam_file=f'{data_root}/cams.pkl',
+        img_prefix=f'{data_root}/images_gray/',
+        data_cfg=data_cfg,
+        pipeline=eval_pipeline,
+        dataset_info={{_base_.dataset_info}}),
+
+    test=dict(
+        type='MouseDannce2dDatasetSview',
+        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
+        ann_3d_file=f'{data_root}/joints_3d.json',
+        cam_file=f'{data_root}/cams.pkl',
+        img_prefix=f'{data_root}/images_gray/',
+        data_cfg=data_cfg,
+        pipeline=eval_pipeline,
+        dataset_info={{_base_.dataset_info}}),
 )

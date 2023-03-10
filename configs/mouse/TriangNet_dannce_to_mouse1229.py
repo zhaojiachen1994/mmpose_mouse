@@ -1,10 +1,21 @@
-_base_ = [
-    '../_base_/default_runtime.py',
-    '../_base_/mouse_datasets/mouse_one_1229.py'
-]
+_base_ = ['../_base_/default_runtime.py',
+          '../_base_/mouse_datasets/mouse_dannce_3d.py']
+# source_data_info = ['../_base_/mouse_datasets/mouse_dannce_3d.py']
+# target_data_info = ['../_base_/mouse_datasets/mouse_one_1229.py']
+
 
 # joint channel config
-channel_cfg = dict(
+source_channel_cfg = dict(
+    num_output_channels=22,
+    dataset_joints=22,
+    dataset_channel=[
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+    ],
+    inference_channel=[
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
+    ])
+
+target_channel_cfg = dict(
     num_output_channels=16,
     dataset_joints=16,
     dataset_channel=[
@@ -14,6 +25,7 @@ channel_cfg = dict(
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
 
 """model config"""
+
 train_cfg = dict(
     supervised_2d=True,  # use the 2d ground truth to train keypoint_head
     contrastive_feature=True,  # use the sup_con_loss to train feature_head
@@ -55,7 +67,7 @@ model = dict(
     keypoint_head=dict(
         type='TopdownHeatmapSimpleHead',
         in_channels=48,
-        out_channels=channel_cfg['num_output_channels'],
+        out_channels=source_channel_cfg['num_output_channels'],
         num_deconv_layers=0,
         extra=dict(final_conv_kernel=1, ),
         loss_keypoint=dict(type='JointsMSELoss', use_target_weight=True)),
@@ -79,13 +91,34 @@ model = dict(
 )
 
 """data config"""
-data_cfg = dict(
+source_data_cfg = dict(
     image_size=[256, 256],
     heatmap_size=[64, 64],
-    num_output_channels=channel_cfg['num_output_channels'],
-    num_joints=channel_cfg['dataset_joints'],
-    dataset_channel=channel_cfg['dataset_channel'],
-    inference_channel=channel_cfg['inference_channel'],
+    num_output_channels=source_channel_cfg['num_output_channels'],
+    num_joints=source_channel_cfg['dataset_joints'],
+    dataset_channel=source_channel_cfg['dataset_channel'],
+    inference_channel=source_channel_cfg['inference_channel'],
+    soft_nms=False,
+    nms_thr=1.0,
+    oks_thr=0.9,
+    vis_thr=0.2,
+    use_gt_bbox=True,
+    det_bbox_thr=0.0,
+    bbox_file='',
+    space_size=[0.3, 0.3, 0.3],
+    space_center=[0, 0, 0.15],
+    cube_size=[0.1, 0.1, 0.1],
+    num_cameras=6,
+    use_different_joint_weights=False
+)
+
+target_data_cfg = dict(
+    image_size=[256, 256],
+    heatmap_size=[64, 64],
+    num_output_channels=target_channel_cfg['num_output_channels'],
+    num_joints=target_channel_cfg['dataset_joints'],
+    dataset_channel=target_channel_cfg['dataset_channel'],
+    inference_channel=target_channel_cfg['inference_channel'],
     soft_nms=False,
     nms_thr=1.0,
     oks_thr=0.9,
@@ -132,6 +165,7 @@ train_pipeline = [
         meta_keys=['image_file', 'bbox_offset', 'resize_ratio']
     )
 ]
+
 val_pipeline = [
     dict(
         type="MultiItemProcess",
@@ -165,29 +199,31 @@ val_pipeline = [
 ]
 test_pipeline = val_pipeline
 
-data_root = "D:/Datasets/transfer_mouse/onemouse1229"
+source_data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
+target_data_root = 'D:/Datasets/transfer_mouse/onemouse1229'
+
 data = dict(
-    samples_per_gpu=5,
+    samples_per_gpu=4,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=64),
-    test_dataloader=dict(samples_per_gpu=64),
-    train=dict(
-        type="Mouse12293dDatasetMview",
-        ann_file=f"{data_root}/anno_20221229-1-012345.json",
-        ann_3d_file=f"{data_root}/anno_20221229_joints_3d.json",
-        cam_file=f"{data_root}/calibration_adjusted.json",
-        img_prefix=f'{data_root}/',
-        data_cfg=data_cfg,
+    val_dataloader=dict(samples_per_gpu=4),
+    test_dataloader=dict(samples_per_gpu=4),
+    source=dict(
+        type='MouseDannce3dDataset',
+        ann_file=f'{source_data_root}/annotations_visible_train930_new.json',
+        ann_3d_file=f'{source_data_root}/joints_3d.json',
+        cam_file=f'{source_data_root}/cams.pkl',
+        img_prefix=f'{source_data_root}/images_gray/',
+        data_cfg=source_data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
-    val=dict(
+
+    target=dict(
         type="Mouse12293dDatasetMview",
-        ann_file=f"{data_root}/anno_20221229-1-012345.json",
-        ann_3d_file=f"{data_root}/anno_20221229_joints_3d.json",
-        cam_file=f"{data_root}/calibration_adjusted.json",
-        img_prefix=f'{data_root}/',
-        data_cfg=data_cfg,
+        ann_file=f"{target_data_root}/anno_20221229-1-012345.json",
+        ann_3d_file=f"{target_data_root}/anno_20221229_joints_3d.json",
+        cam_file=f"{target_data_root}/calibration_adjusted.json",
+        img_prefix=f'{target_data_root}/',
+        data_cfg=target_data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}})
-
 )

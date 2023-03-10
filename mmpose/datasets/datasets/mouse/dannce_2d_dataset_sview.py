@@ -1,10 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import json_tricks as json
-import numpy as np
 import os.path as osp
 import tempfile
 import warnings
 from collections import OrderedDict, defaultdict
+
+import json_tricks as json
+import numpy as np
 from mmcv import Config, deprecated_api_warning
 from xtcocotools.cocoeval import COCOeval
 
@@ -90,10 +91,11 @@ class MouseDannce2dDatasetSview(Kpt2dSviewRgbImgTopDownDataset):
         self.nms_thr = data_cfg['nms_thr']
         self.oks_thr = data_cfg['oks_thr']
         self.vis_thr = data_cfg['vis_thr']
+        self.data_cfg = data_cfg
 
         self.ann_info['use_different_joint_weights'] = False
         self.db = self._get_db()
-
+        results_path = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/inference_triangNet_dannce"
         print(f'=> num_images: {self.num_images}')
         print(f'=> load {len(self.db)} samples')
 
@@ -126,6 +128,7 @@ class MouseDannce2dDatasetSview(Kpt2dSviewRgbImgTopDownDataset):
         width = img_ann['width']
         height = img_ann['height']
         num_joints = self.ann_info['num_joints']
+        num_joints = self.data_cfg['num_joints']
 
         ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
         objs = self.coco.loadAnns(ann_ids)
@@ -158,6 +161,8 @@ class MouseDannce2dDatasetSview(Kpt2dSviewRgbImgTopDownDataset):
             joints_3d_visible = np.zeros((num_joints, 3), dtype=np.float32)
 
             keypoints = np.array(obj['keypoints']).reshape(-1, 3)
+            # joints_3d[:, :2] = keypoints[self.data_cfg['dataset_channel'], :2]
+            # joints_3d_visible[:, :2] = np.minimum(1, keypoints[self.data_cfg['dataset_channel'], 2:3])
             joints_3d[:, :2] = keypoints[:, :2]
             joints_3d_visible[:, :2] = np.minimum(1, keypoints[:, 2:3])
 
@@ -334,6 +339,7 @@ class MouseDannce2dDatasetSview(Kpt2dSviewRgbImgTopDownDataset):
 
     def _do_python_keypoint_eval(self, res_file):
         """Keypoint evaluation using COCOAPI."""
+
         coco_det = self.coco.loadRes(res_file)
         coco_eval = COCOeval(self.coco, coco_det, 'keypoints', self.sigmas)
         coco_eval.params.useSegm = None

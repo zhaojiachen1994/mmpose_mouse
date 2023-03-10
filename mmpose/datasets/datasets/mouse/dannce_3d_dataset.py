@@ -86,10 +86,10 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                 self.coco.imgs)
 
         self.cameras = self._get_cam(cam_file)
-        self.db = self._get_db()
+        self.db = self._get_db(data_cfg)
 
         # get the 3d keypoint ground truth, here written as joints_4d to match the mmpose denotation
-        self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(self.ann_3d_file)
+        self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(data_cfg)
 
     def _get_cam(self, calib):
         """Get camera parameters.
@@ -112,14 +112,15 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                                cam['dist_coeff'][3]]
         return cameras
 
-    def _get_db(self):
+    def _get_db(self, data_cfg):
         """get the database"""
         gt_db = []
         for img_id in self.img_ids:
             img_ann = self.coco.loadImgs(img_id)[0]
             width = img_ann['width']
             height = img_ann['height']
-            num_joints = self.ann_info['num_joints']
+            # num_joints = self.ann_info['num_joints']
+            num_joints = data_cfg['num_joints']
             ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
             objs = self.coco.loadAnns(ann_ids)
 
@@ -152,8 +153,8 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                 joints_3d = np.zeros((num_joints, 3), dtype=np.float32)
                 joints_3d_visible = np.zeros((num_joints, 3), dtype=np.float32)
                 keypoints = np.array(obj['keypoints']).reshape(-1, 3)
-                joints_3d[:, :2] = keypoints[:, :2]
-                joints_3d_visible[:, :2] = np.minimum(1, keypoints[:, 2:3])
+                joints_3d[:, :2] = keypoints[data_cfg['dataset_channel'], :2]
+                joints_3d_visible[:, :2] = np.minimum(1, keypoints[data_cfg['dataset_channel'], 2:3])
 
                 image_file = osp.join(self.img_prefix, self.id2name[img_id])
                 rec.append({
@@ -258,22 +259,24 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
 
                 return name_value
 
-    def _get_joints_3d(self, ann_3d_file):
+    def _get_joints_3d(self, data_cfg):
         """load the ground truth 3d keypoint, annoted as 4d in outer space"""
-        with open(ann_3d_file, 'rb') as f:
+        with open(self.ann_3d_file, 'rb') as f:
             data = json.load(f)
         data = np.array(data['joint_3d'])
         [num_sample, num_joints, _] = data.shape
+
         data[np.isnan(data)] = 0.0
 
         # joints_3d
-        joints_3d = np.zeros_like(data, dtype=np.float32)
-        joints_3d[:] = data[:]
+        # joints_3d = np.zeros_like(data[:, data_cfg['dataset_channel'], :], dtype=np.float32)
+        # joints_3d[:] = data[:, data_cfg['dataset_channel'], :]
+        joints_3d = data[:, data_cfg['dataset_channel'], :]
 
         # joints_3d_visible
-        joints_3d_visible = np.ones_like(data, dtype=np.float32)
+        joints_3d_visible = np.ones_like(joints_3d, dtype=np.float32)
         joints_3d_visible[joints_3d == 0] = 0.0
-        joints_3d_visible = joints_3d_visible.reshape([num_sample, num_joints, 3])
+        joints_3d_visible = joints_3d_visible.reshape([-1, data_cfg['num_joints'], 3])
 
         roots_3d = data[:, 4, :]  # body_middle as root here
         return joints_3d, joints_3d_visible, roots_3d
@@ -284,12 +287,14 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         for c in range(self.num_cameras):
             result = copy.deepcopy(self.db[self.num_cameras * idx + c])
             result['ann_info'] = self.ann_info
-            result['camera'] = self.cameras[c]
+            result['camera_0'] = self.cameras[c]
+            result['camera'] = copy.deepcopy(self.cameras[c])
             result['joints_4d'] = self.joints_4d[idx]
             result['joints_4d_visible'] = self.joints_4d_visible[idx]
             # dummy label
             result['label'] = 0,
             results[c] = result
+
         return self.pipeline(results)
 
     def _write_coco_keypoint_results(self, keypoints, res_file):

@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 
 import json_tricks as json
 import numpy as np
+from icecream import ic
 from scipy.io import loadmat
 from torch.utils.data import Dataset
 
@@ -63,8 +64,9 @@ class Kpt3dMviewRgbImgDirectDataset(Dataset, metaclass=ABCMeta):
                 'for details.')
 
         dataset_info = DatasetInfo(dataset_info)
-
+        ic(dataset_info.flip_pairs)
         self.ann_info['flip_pairs'] = dataset_info.flip_pairs
+
         self.ann_info['num_scales'] = 1
         self.ann_info['flip_index'] = dataset_info.flip_index
         self.ann_info['upper_body_ids'] = dataset_info.upper_body_ids
