@@ -1,6 +1,6 @@
 _base_ = ['../_base_/default_runtime.py',
-          '../_base_/mouse_datasets/mouse_dannce_3d.py']
-# source_data_info = ['../_base_/mouse_datasets/mouse_dannce_3d.py']
+          '../_base_/mouse_datasets/mouse_dannce_p22.py']
+# source_data_info = ['../_base_/mouse_datasets/mouse_dannce_p22.py']
 # target_data_info = ['../_base_/mouse_datasets/mouse_one_1229.py']
 
 

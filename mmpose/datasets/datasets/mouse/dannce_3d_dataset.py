@@ -45,7 +45,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         """
 
         if dataset_info is None:
-            cfg = Config.fromfile('configs/_base_/datasets/mouse_datasets/mouse_dannce_3d.py')
+            cfg = Config.fromfile('configs/_base_/datasets/mouse_datasets/mouse_dannce_p22.py')
             dataset_info = cfg._cfg_dict['dataset_info']
 
         super().__init__(

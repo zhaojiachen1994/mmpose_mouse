@@ -1,18 +1,7 @@
 import copy
-import json
-import numpy as np
-import os.path as osp
-import pickle
-import tempfile
-import warnings
-from collections import OrderedDict, defaultdict
-from xtcocotools.coco import COCO
-from xtcocotools.cocoeval import COCOeval
 
 from mmpose.datasets.builder import DATASETS
-from mmpose.datasets.datasets.base import Kpt2dSviewRgbImgTopDownDataset
 from .dannce_2d_dataset_sview import MouseDannce2dDatasetSview
-from ....core.post_processing import oks_nms, soft_oks_nms
 
 
 @DATASETS.register_module()
@@ -30,7 +19,7 @@ class MouseDannce2dDatasetMview(MouseDannce2dDatasetSview):
                  num_cameras=6
                  ):
         if dataset_info is None:
-            cfg = Config.fromfile('configs/_base_/datasets/mouse_datasets/mouse_dannce_3d.py')
+            cfg = Config.fromfile('configs/_base_/datasets/mouse_datasets/mouse_dannce_p22.py')
             dataset_info = cfg._cfg_dict['dataset_info']
 
         super().__init__(

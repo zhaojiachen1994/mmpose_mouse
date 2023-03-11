@@ -1,6 +1,6 @@
 _base_ = [
     '../../_base_/default_runtime.py',
-    '../../_base_/mouse_datasets/mouse_dannce_2d_sview.py'
+    '../../_base_/mouse_datasets/mouse_dannce_p22.py'
 ]
 
 # evaluation config

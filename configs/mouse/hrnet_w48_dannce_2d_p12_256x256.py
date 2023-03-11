@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/mouse_datasets/mouse_dannce_p12.py'
 ]
 
-evaluation = dict(interval=2, metric='mAP', save_best='AP')
+evaluation = dict(interval=100, metric='mAP', save_best='AP')
 
 optimizer = dict(
     type='Adam',
@@ -17,7 +17,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[170, 200])
-total_epochs = 5
+total_epochs = 500
 log_config = dict(
     interval=1,
     hooks=[
@@ -131,7 +131,7 @@ train_pipeline = [
         ]),
 ]
 
-eval_pipeline = [
+val_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='TopDownGetBboxCenterScale', padding=1.25),
     dict(type='TopDownAffine'),
@@ -149,11 +149,11 @@ eval_pipeline = [
         ]),
 ]
 
-test_pipeline = eval_pipeline
+test_pipeline = val_pipeline
 
 data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=16,
     workers_per_gpu=2,
     val_dataloader=dict(samples_per_gpu=32),
     test_dataloader=dict(samples_per_gpu=32),
@@ -167,14 +167,14 @@ data = dict(
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
 
-    eval=dict(
+    val=dict(
         type='MouseDannce2dDatasetSview',
         ann_file=f'{data_root}/annotations_visible_eval930_new.json',
         # ann_3d_file=f'{data_root}/joints_3d.json',
         # cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
         data_cfg=data_cfg,
-        pipeline=eval_pipeline,
+        pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
 
     test=dict(
@@ -184,6 +184,6 @@ data = dict(
         # cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
         data_cfg=data_cfg,
-        pipeline=eval_pipeline,
+        pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
 )

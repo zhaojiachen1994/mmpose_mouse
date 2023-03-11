@@ -29,7 +29,7 @@ if __name__ == "__main__":
     dataset = build_dataset(config.data.train)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    dataset_info_file = "D:/Pycharm Projects-win/mm_mouse/mmpose/configs/_base_/mouse_datasets/mouse_dannce_3d.py"
+    dataset_info_file = "/configs/_base_/mouse_datasets/mouse_dannce_p22.py"
     dataset_info = DatasetInfo(mmcv.Config.fromfile(config_file)._cfg_dict['dataset_info'])
     ic(dataset_info.__dir__())
     ic(len(dataset_info.pose_kpt_color))
