@@ -375,6 +375,7 @@ class MSELoss(nn.Module):
             target_weight (torch.Tensor[N, K, 2]):
                 Weights across different joint types.
         """
+        # ic(target.requires_grad, output.requires_grad)
         if self.use_target_weight:
             assert target_weight is not None
             loss = self.criterion(output * target_weight,

@@ -6,6 +6,7 @@ from .cid_head import CIDHead
 from .deconv_head import DeconvHead
 from .deeppose_regression_head import DeepposeRegressionHead
 from .dekr_head import DEKRHead
+from .global_average_pooling_head import GlobalAveragePoolingHead
 from .hmr_head import HMRMeshHead
 from .interhand_3d_head import Interhand3DHead
 from .mtut_head import MultiModalSSAHead
@@ -27,5 +28,5 @@ __all__ = [
     'DeepposeRegressionHead', 'TemporalRegressionHead', 'Interhand3DHead',
     'HMRMeshHead', 'DeconvHead', 'ViPNASHeatmapSimpleHead', 'CuboidCenterHead',
     'CuboidPoseHead', 'MultiModalSSAHead', 'DEKRHead',
-    'TopdownHeatmapConvHead', 'TopdownFeatureHead', 'TriangulateHead'
+    'TopdownHeatmapConvHead', 'TopdownFeatureHead', 'TriangulateHead', 'GlobalAveragePoolingHead'
 ]

@@ -44,7 +44,7 @@ class GlobalAveragePoolingHead(nn.Module):
         x = x.view((batch_size, n_channels, -1))
         x = x.mean(dim=-1)
 
-        out = self.head(x)
+        out = self.fc_layers(x)
         return out
 
     def _transform_inputs(self, inputs):

@@ -43,20 +43,17 @@ def homogeneous_to_euclidean(points):
 @HEADS.register_module()
 class TriangulateHead(nn.Module):
     def __init__(self, num_cams=6, img_shape=[256, 256], heatmap_shape=[64, 64],
-                 softmax_heatmap=True, loss_3d_super=None,
-                 train_cfg=None,
-                 test_cfg=None):
+                 softmax_heatmap=True, loss_3d_sup=None, det_conf_thr=None,
+                 train_cfg=None, test_cfg=None):
         """from the heatmap to 2d keypoints, then to 3d keypoints"""
         super().__init__()
         self.num_cams = num_cams
         [self.h_img, self.w_img] = img_shape
         [self.h_map, self.w_map] = heatmap_shape
         self.softmax = softmax_heatmap
-        self.det_conf_thr = 0.7  # weather use the 2d detect confidence to mask the fail detection points
-
-        if loss_3d_super is not None:
-            # if train_cfg.get('supervised_3d', True):
-                self.super_loss = build_loss(loss_3d_super)
+        self.det_conf_thr = det_conf_thr  # weather use the 2d detect confidence to mask the fail detection points
+        if loss_3d_sup is not None and train_cfg.get('use_3d_sup'):
+            self.super_loss = build_loss(loss_3d_sup)
 
     def compute_kp_coords(self, heatmap):
         """
@@ -127,6 +124,7 @@ class TriangulateHead(nn.Module):
         if confidences is None:
             confidences = torch.ones(n_views, dtype=torch.float32, device=points.device)
 
+
         A = proj_matrices[:, 2:3].expand(n_views, 2, 4) * points.view(n_views, 2, 1)
         A -= proj_matrices[:, :2]
         A *= confidences.view(-1, 1, 1)
@@ -141,11 +139,12 @@ class TriangulateHead(nn.Module):
 
         return point_3d, res_triang
 
-    def forward(self, heatmap, proj_matrices=None, ):
+    def forward(self, heatmap, proj_matrices=None, confidences=None):
         """
         Args:
             heatmap: [bs*num_cams, num_joints, h_heatmap, w_heatmap]
             proj_matrices: [bs, num_cams, 3, 4]
+            confidences: [bs*num_cams, num_joints]
 
         Returns:
             kp_3d: triangulation results, keypoint 3d coordinates, [bs, n_joints, 3]
@@ -153,37 +152,42 @@ class TriangulateHead(nn.Module):
         """
         kp_2d_heatmap, kp_2d_croped = self.compute_kp_coords(
             heatmap)  # [bs*num_cams, num_joints, 3] with [x, y, confidence]
-        # if self.det_conf_thr is not None:
-        #     det_conf = kp_2d_croped[..., -1]
-        #     kp_2d_croped[det_conf < self.det_conf_thr] = torch.nan
-        #     ic(kp_2d_croped)
-
         kp_2d_croped = kp_2d_croped.reshape(
             [-1, self.num_cams, *kp_2d_croped.shape[1:]])  # [bs, num_cams, num_joints, 2]
+
         kp_2d_heatmap = kp_2d_heatmap.reshape([-1, self.num_cams, *kp_2d_heatmap.shape[1:]])
         batch_size, n_cams, n_joints = kp_2d_croped.shape[:3]
 
         kp_3d = torch.zeros(batch_size, n_joints, 3, dtype=torch.float32, device=kp_2d_croped.device)
         res_triang = torch.zeros(batch_size, n_joints, dtype=torch.float32, device=kp_2d_croped.device)
-        # confidences = confidences_batch[batch_i, :, joint_i] if confidences_batch is not None else None
-        confidences = None
+
+        # norm confidences
+        confidences = confidences.view(batch_size, n_cams, *confidences.shape[1:])
+        confidences = confidences / confidences.sum(dim=1, keepdim=True)
+        confidences = confidences + 1e-5
+
+        # ic(kp_2d_croped.requires_grad, confidences.requires_grad)
+
         if self.det_conf_thr is not None:
             for batch_i in range(batch_size):
                 for joint_i in range(n_joints):
                     cams_detected = kp_2d_croped[batch_i, :, joint_i, 2] > self.det_conf_thr
                     cam_idx = torch.where(cams_detected)[0]
-                    points = kp_2d_croped[batch_i, cam_idx, joint_i, :2]  # a joint in all views
-                    # ic(cam_idx, points.shape, proj_matrices.shape)
+                    point = kp_2d_croped[batch_i, cam_idx, joint_i, :2]  # a joint in all views
+                    confidence = confidences[batch_i, cam_idx, joint_i]
+                    # ic(cam_idx, point.shape, proj_matrices.shape, confidences.shape)
+
                     if torch.sum(cams_detected) < 2:
                         continue
                     kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = \
-                        self.triangulate_point(proj_matrices[batch_i, cam_idx], points, confidences)
+                        self.triangulate_point(proj_matrices[batch_i, cam_idx], point, confidence)
         else:
             for batch_i in range(batch_size):
                 for joint_i in range(n_joints):
                     points = kp_2d_croped[batch_i, :, joint_i, :2]  # a joint in all views
+                    confidence = confidences[batch_i, :, joint_i]
                     kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = \
-                        self.triangulate_point(proj_matrices[batch_i], points, confidences)
+                        self.triangulate_point(proj_matrices[batch_i], points, confidence)
         return kp_3d, res_triang, kp_2d_croped, kp_2d_heatmap
 
     def get_sup_loss(self, output, target, target_weight):

@@ -4,6 +4,7 @@
 import warnings
 
 import torch
+from icecream import ic
 
 from .base import BasePose
 from .. import builder
@@ -36,8 +37,8 @@ class TriangNet(BasePose):
     def __init__(self,
                  backbone,
                  keypoint_head,
-                 triangulate_head,
-                 score_head,
+                 triangulate_head=None,
+                 score_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
@@ -55,12 +56,14 @@ class TriangNet(BasePose):
 
         # init the score_head
         if score_head is not None:
-            score_head['train_cfg'] = train_cfg
-            score_head['test_cfg'] = test_cfg
+            # score_head['train_cfg'] = train_cfg
+            # score_head['test_cfg'] = test_cfg
             self.score_head = builder.build_head(score_head)
 
         # init the triangulate_head
         if triangulate_head is not None:
+            triangulate_head['train_cfg'] = train_cfg
+            triangulate_head['test_cfg'] = test_cfg
             self.triangulate_head = builder.build_head(triangulate_head)
 
         self.pretrained = pretrained
@@ -125,6 +128,7 @@ class TriangNet(BasePose):
                                       img_metas,
                                       target,
                                       target_weight,
+                                      kpt_3d_gt,
                                       **kwargs
                                       )
         else:
@@ -148,32 +152,37 @@ class TriangNet(BasePose):
         h_map, w_map = target.shape[-2], target.shape[-1]
         img = img.reshape(-1, *img.shape[2:])
         target = target.reshape(-1, *target.shape[2:])
-        target_weight = target_weight.reshape(-1, *target_weight.shape[2:]),
+        target_weight = target_weight.reshape(-1, *target_weight.shape[2:])
 
         hidden_features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(hidden_features)
         if self.with_score_head:
-            scores = self.score_head(hidden_features)
+            scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
         else:
-            scores = torch.ones(*img.shape[:2]).type(torch.float)
-
+            scores = torch.ones(*target.shape[:2], dtype=torch.float32, device=target.device)
+        ic(scores.shape)
         if self.with_triangulate_head:
-            kpt_3d_pred, res_triang, kp_2d_croped, kp_2d_heatmap = self.triangulate_head(heatmap, proj_matrices)
+            kpt_3d_pred, res_triang, kp_2d_croped, kp_2d_heatmap = \
+                self.triangulate_head(heatmap, proj_matrices, scores)
 
         # if return loss
         losses = dict()
         if self.with_keypoint_head and \
                 target is not None and \
-                self.train_cfg.get('supervised_2d', True):
+                self.train_cfg.get('use_2d_sup', True):
             keypoint2d_losses = self.keypoint_head.get_loss(heatmap, target, target_weight)
             losses.update(keypoint2d_losses)
             keypoint_accuracy = self.keypoint_head.get_accuracy(heatmap, target, target_weight)
             losses.update(keypoint_accuracy)
 
-        if self.with_triangulate_head and kpt_3d_gt is not None and self.train_cfg.get('supervised_3d', True):
+        if self.with_triangulate_head and kpt_3d_gt is not None and self.train_cfg.get('use_3d_sup', True):
             sup_3d_loss = self.triangulate_head.get_sup_loss(kpt_3d_pred, kpt_3d_gt, target_weight)
             losses.update(sup_3d_loss)
+
+        if self.with_triangulate_head and self.train_cfg.get('use_3d_unsup', True):
+            unsup_3d_loss = self.triangulate_head.get_unSup_loss(res_triang)
+            losses.update(unsup_3d_loss)
         return losses
 
     def forward_test(self, img, proj_matrices, img_metas, return_heatmap, **kwargs):
@@ -187,6 +196,11 @@ class TriangNet(BasePose):
             heatmap = self.keypoint_head(features)  # for triangulate-head input
             output_heatmap = self.keypoint_head.inference_model(
                 features, flip_pairs=None)
+
+        if self.with_score_head:
+            scores = self.score_head(features)
+        else:
+            scores = torch.ones(*img.shape[:2], dtype=torch.float32, device=img.device)
 
         if self.test_cfg.get('flip_test', True):
             img_flipped = img.flip(3)
@@ -205,10 +219,11 @@ class TriangNet(BasePose):
             result['output_heatmap'] = output_heatmap
 
         if self.with_triangulate_head:
-            kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_matrices)
+            kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_matrices, scores)
             result['preds'] = kp_3d.detach().cpu().numpy()
             result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()
             result['res_triang'] = res_triang.detach().cpu().numpy()
+            result['scores'] = scores.detach().cpu().numpy()
 
         if img_metas is not None:
             result['img_metas'] = img_metas.data[0]  # using the img_metas to get the 3d global ground truth
@@ -240,7 +255,6 @@ class TriangNet(BasePose):
         Returns:
 
         """
-
         pose_3d = result['preds']  # [bs, num_joints, 3]
         bs = imgs.shape[0]
         num_cameras = imgs.shape[1]
