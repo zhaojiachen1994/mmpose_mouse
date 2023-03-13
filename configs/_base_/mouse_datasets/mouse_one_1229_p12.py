@@ -36,49 +36,24 @@ dataset_info = dict(
                 color=[187, 97, 166],
                 type='upper',
                 swap='right_paw'),
-        # 9: dict(
-        #     name='left_shoulder',
-        #     id=9,
-        #     color=[187, 97, 166],
-        #     type='lower',
-        #     swap='right_shoulder'),
-        10: dict(
+        9: dict(
             name='right_paw',
-            id=10,
+            id=9,
             color=[109, 192, 91],
             type='upper',
             swap='left_paw'),
-
-        # 11: dict(
-        #     name='right_shoulder',
-        #     id=11,
-        #     color=[109, 192, 91],
-        #     type='lower',
-        #     swap='left_shoulder'),
-        12: dict(
+        10: dict(
             name='left_foot',
-            id=12,
+            id=10,
             color=[210, 220, 88],
             type='upper',
             swap='right_foot'),
-        # 13: dict(
-        #     name='left_hip',
-        #     id=13,
-        #     color=[210, 220, 88],
-        #     type='lower',
-        #     swap='right_hip'),
-        14: dict(
+        11: dict(
             name='right_foot',
-            id=14,
+            id=11,
             color=[98, 201, 211],
             type='lower',
             swap='left_foot'),
-        # 15: dict(name="right_hip",
-        #          id=25,
-        #          color=[98, 201, 211],
-        #          type='lower',
-        #          swap='left_hip'
-        #          )
     },
     skeleton_info={
         0: dict(link=('tail_root', 'tail_middle'), id=0, color=[221, 94, 86]),
@@ -98,11 +73,10 @@ dataset_info = dict(
         14: dict(link=('body_middle', 'right_paw'), id=14, color=[109, 192, 91]),
     },
     joint_weights=[
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.
+        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.
     ],
     sigmas=[0.1, 0.1, 0.1,
             0.1, 0.1, 0.1,
             0.1, 0.1, 0.1,
-            0.1, 0.1, 0.1,
-            0.1, 0.1, 0.1, 0.1]
+            0.1, 0.1, 0.1]
 )

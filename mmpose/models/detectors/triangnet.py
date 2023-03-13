@@ -37,6 +37,7 @@ class TriangNet(BasePose):
                  backbone,
                  keypoint_head,
                  triangulate_head,
+                 score_head,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
@@ -52,6 +53,12 @@ class TriangNet(BasePose):
             keypoint_head['test_cfg'] = test_cfg
             self.keypoint_head = builder.build_head(keypoint_head)
 
+        # init the score_head
+        if score_head is not None:
+            score_head['train_cfg'] = train_cfg
+            score_head['test_cfg'] = test_cfg
+            self.score_head = builder.build_head(score_head)
+
         # init the triangulate_head
         if triangulate_head is not None:
             self.triangulate_head = builder.build_head(triangulate_head)
@@ -61,12 +68,14 @@ class TriangNet(BasePose):
 
     @property
     def with_keypoint_head(self):
-        """Check if has keypoint_head."""
         return hasattr(self, 'keypoint_head')
 
     @property
+    def with_score_head(self):
+        return hasattr(self, 'score_head')
+
+    @property
     def with_triangulate_head(self):
-        """check if has triangulate_head"""
         return hasattr(self, 'triangulate_head')
 
     def init_weights(self, pretrained=None):
@@ -144,6 +153,11 @@ class TriangNet(BasePose):
         hidden_features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(hidden_features)
+        if self.with_score_head:
+            scores = self.score_head(hidden_features)
+        else:
+            scores = torch.ones(*img.shape[:2]).type(torch.float)
+
         if self.with_triangulate_head:
             kpt_3d_pred, res_triang, kp_2d_croped, kp_2d_heatmap = self.triangulate_head(heatmap, proj_matrices)
 

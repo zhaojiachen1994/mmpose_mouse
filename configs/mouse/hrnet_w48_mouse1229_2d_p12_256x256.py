@@ -1,14 +1,14 @@
 _base_ = [
     '../_base_/default_runtime.py',
-    '../_base_/mouse_datasets/mouse_dannce_p12.py'
+    '../_base_/mouse_datasets/mouse_one_1229_p12.py'
 ]
 
-evaluation = dict(interval=100, metric='mAP', save_best='AP')
+evaluation = dict(interval=50, metric='mAP', save_best='AP')
 
 optimizer = dict(
     type='Adam',
-    lr=5e-4,
-)
+    lr=5e-4, )
+
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
@@ -25,15 +25,12 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 
+# joint channel config
 channel_cfg = dict(
     num_output_channels=12,
     dataset_joints=12,
-    dataset_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 16, 19
-    ],
-    inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 16, 19
-    ])
+    dataset_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14],
+    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14])
 
 # model settings
 model = dict(
@@ -126,8 +123,8 @@ train_pipeline = [
         type='Collect',
         keys=['img', 'target', 'target_weight'],
         meta_keys=[
-            'image_file', 'joints_3d', 'joints_3d_visible',
-            'center', 'scale', 'rotation', 'bbox_score', 'flip_pairs'
+            'image_file', 'joints_3d', 'joints_3d_visible', 'center', 'scale',
+            'rotation', 'bbox_score', 'flip_pairs'
         ]),
 ]
 
@@ -151,39 +148,33 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
+data_root = "D:/Datasets/transfer_mouse/onemouse1229"
 data = dict(
     samples_per_gpu=16,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=32),
-    test_dataloader=dict(samples_per_gpu=32),
+    val_dataloader=dict(samples_per_gpu=16),
+    test_dataloader=dict(samples_per_gpu=16),
     train=dict(
-        type='MouseDannce2dDatasetSview',
-        ann_file=f'{data_root}/annotations_visible_train930_new.json',
-        # ann_3d_file=f'{data_root}/joints_3d.json',
-        # cam_file=f'{data_root}/cams.pkl',
-        img_prefix=f'{data_root}/images_gray/',
+        type='Mouse12292dDatasetSview',
+        ann_file=f'{data_root}/anno_20221229-1-012345_train.json',
+        img_prefix=f'{data_root}/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
 
     val=dict(
-        type='MouseDannce2dDatasetSview',
-        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
-        # ann_3d_file=f'{data_root}/joints_3d.json',
-        # cam_file=f'{data_root}/cams.pkl',
-        img_prefix=f'{data_root}/images_gray/',
+        type='Mouse12292dDatasetSview',
+        ann_file=f'{data_root}/anno_20221229-1-012345_test.json',
+        img_prefix=f'{data_root}/',
         data_cfg=data_cfg,
-        pipeline=val_pipeline,
+        pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
 
     test=dict(
-        type='MouseDannce2dDatasetSview',
-        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
-        # ann_3d_file=f'{data_root}/joints_3d.json',
-        # cam_file=f'{data_root}/cams.pkl',
-        img_prefix=f'{data_root}/images_gray/',
+        type='Mouse12292dDatasetSview',
+        ann_file=f'{data_root}/anno_20221229-1-012345_test.json',
+        img_prefix=f'{data_root}/',
         data_cfg=data_cfg,
-        pipeline=val_pipeline,
+        pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
 )
