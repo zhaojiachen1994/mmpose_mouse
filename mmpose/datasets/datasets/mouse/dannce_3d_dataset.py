@@ -3,9 +3,6 @@ import copy
 import json
 import os.path as osp
 import pickle
-import tempfile
-import warnings
-from collections import OrderedDict, defaultdict
 
 import numpy as np
 from mmcv import Config
@@ -14,7 +11,6 @@ from xtcocotools.cocoeval import COCOeval
 
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.base import Kpt3dMviewRgbImgDirectDataset
-from ....core.post_processing import oks_nms, soft_oks_nms
 
 
 @DATASETS.register_module()
@@ -172,92 +168,92 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         return gt_db
 
     def evaluate(self, results, res_folder=None, metric='mAP', **kwargs):
-        #
-        if 'type' in kwargs:
-            if kwargs['type'] == '3d':
-                pass
-            # todo: add the 3d evaluation code
-            elif kwargs['type'] == '2d':
-                metrics = metric if isinstance(metric, list) else [metric]
-                allowed_metrics = ['mAP']
-                for metric in metrics:
-                    if metric not in allowed_metrics:
-                        raise KeyError(f'metric {metric} is not supported')
 
-                if res_folder is not None:
-                    tmp_folder = None
-                    res_file = osp.join(res_folder, 'result_keypoints.json')
-                else:
-                    tmp_folder = tempfile.TemporaryDirectory()
-                    res_file = osp.join(tmp_folder.name, 'result_keypoints.json')
-
-                kpts = defaultdict(list)
-
-                for result in results:
-                    preds = result['preds']
-                    boxes = result['boxes']
-                    image_paths = result['image_paths']
-                    bbox_ids = result['bbox_ids']
-
-                    batch_size = len(image_paths)
-                    for i in range(batch_size):
-                        image_id = self.name2id[image_paths[i][len(self.img_prefix):]]
-                        kpts[image_id].append({
-                            'keypoints': preds[i],
-                            'center': boxes[i][0:2],
-                            'scale': boxes[i][2:4],
-                            'area': boxes[i][4],
-                            'score': boxes[i][5],
-                            'image_id': image_id,
-                            'bbox_id': bbox_ids[i]
-                        })
-                kpts = self._sort_and_unique_bboxes(kpts)
-
-                # rescoring and oks nms
-                num_joints = self.ann_info['num_joints']
-                vis_thr = self.vis_thr
-                oks_thr = self.oks_thr
-                valid_kpts = []
-                for image_id in kpts.keys():
-                    img_kpts = kpts[image_id]
-                    for n_p in img_kpts:
-                        box_score = n_p['score']
-                        kpt_score = 0
-                        valid_num = 0
-                        for n_jt in range(0, num_joints):
-                            t_s = n_p['keypoints'][n_jt][2]
-                            if t_s > vis_thr:
-                                kpt_score = kpt_score + t_s
-                                valid_num = valid_num + 1
-                        if valid_num != 0:
-                            kpt_score = kpt_score / valid_num
-                        # rescoring
-                        n_p['score'] = kpt_score * box_score
-
-                    if self.use_nms:
-                        nms = soft_oks_nms if self.soft_nms else oks_nms
-                        keep = nms(list(img_kpts), oks_thr, sigmas=self.sigmas)
-                        valid_kpts.append([img_kpts[_keep] for _keep in keep])
-                    else:
-                        valid_kpts.append(img_kpts)
-
-                self._write_coco_keypoint_results(valid_kpts, res_file)
-
-                # do evaluation only if the ground truth keypoint annotations exist
-                if 'annotations' in self.coco.dataset:
-                    info_str = self._do_python_keypoint_eval(res_file)
-                    name_value = OrderedDict(info_str)
-
-                    if tmp_folder is not None:
-                        tmp_folder.cleanup()
-                else:
-                    warnings.warn(f'Due to the absence of ground truth keypoint'
-                                  f'annotations, the quantitative evaluation can not'
-                                  f'be conducted. The prediction results have been'
-                                  f'saved at: {osp.abspath(res_file)}')
-                    name_value = {}
-
-                return name_value
+    # if 'type' in kwargs:
+    #     if kwargs['type'] == '3d':
+    #         pass
+    #     # todo: add the 3d evaluation code
+    #     elif kwargs['type'] == '2d':
+    #         metrics = metric if isinstance(metric, list) else [metric]
+    #         allowed_metrics = ['mAP']
+    #         for metric in metrics:
+    #             if metric not in allowed_metrics:
+    #                 raise KeyError(f'metric {metric} is not supported')
+    #
+    #         if res_folder is not None:
+    #             tmp_folder = None
+    #             res_file = osp.join(res_folder, 'result_keypoints.json')
+    #         else:
+    #             tmp_folder = tempfile.TemporaryDirectory()
+    #             res_file = osp.join(tmp_folder.name, 'result_keypoints.json')
+    #
+    #         kpts = defaultdict(list)
+    #
+    #         for result in results:
+    #             preds = result['preds']
+    #             boxes = result['boxes']
+    #             image_paths = result['image_paths']
+    #             bbox_ids = result['bbox_ids']
+    #
+    #             batch_size = len(image_paths)
+    #             for i in range(batch_size):
+    #                 image_id = self.name2id[image_paths[i][len(self.img_prefix):]]
+    #                 kpts[image_id].append({
+    #                     'keypoints': preds[i],
+    #                     'center': boxes[i][0:2],
+    #                     'scale': boxes[i][2:4],
+    #                     'area': boxes[i][4],
+    #                     'score': boxes[i][5],
+    #                     'image_id': image_id,
+    #                     'bbox_id': bbox_ids[i]
+    #                 })
+    #         kpts = self._sort_and_unique_bboxes(kpts)
+    #
+    #         # rescoring and oks nms
+    #         num_joints = self.ann_info['num_joints']
+    #         vis_thr = self.vis_thr
+    #         oks_thr = self.oks_thr
+    #         valid_kpts = []
+    #         for image_id in kpts.keys():
+    #             img_kpts = kpts[image_id]
+    #             for n_p in img_kpts:
+    #                 box_score = n_p['score']
+    #                 kpt_score = 0
+    #                 valid_num = 0
+    #                 for n_jt in range(0, num_joints):
+    #                     t_s = n_p['keypoints'][n_jt][2]
+    #                     if t_s > vis_thr:
+    #                         kpt_score = kpt_score + t_s
+    #                         valid_num = valid_num + 1
+    #                 if valid_num != 0:
+    #                     kpt_score = kpt_score / valid_num
+    #                 # rescoring
+    #                 n_p['score'] = kpt_score * box_score
+    #
+    #             if self.use_nms:
+    #                 nms = soft_oks_nms if self.soft_nms else oks_nms
+    #                 keep = nms(list(img_kpts), oks_thr, sigmas=self.sigmas)
+    #                 valid_kpts.append([img_kpts[_keep] for _keep in keep])
+    #             else:
+    #                 valid_kpts.append(img_kpts)
+    #
+    #         self._write_coco_keypoint_results(valid_kpts, res_file)
+    #
+    #         # do evaluation only if the ground truth keypoint annotations exist
+    #         if 'annotations' in self.coco.dataset:
+    #             info_str = self._do_python_keypoint_eval(res_file)
+    #             name_value = OrderedDict(info_str)
+    #
+    #             if tmp_folder is not None:
+    #                 tmp_folder.cleanup()
+    #         else:
+    #             warnings.warn(f'Due to the absence of ground truth keypoint'
+    #                           f'annotations, the quantitative evaluation can not'
+    #                           f'be conducted. The prediction results have been'
+    #                           f'saved at: {osp.abspath(res_file)}')
+    #             name_value = {}
+    #
+    #         return name_value
 
     def _get_joints_3d(self, data_cfg):
         """load the ground truth 3d keypoint, annoted as 4d in outer space"""
