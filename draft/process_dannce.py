@@ -78,7 +78,8 @@ if __name__ == "__main__":
     data = np.array(data['joint_3d'])
     [num_sample, num_joints, _] = data.shape
     joints_3d_visible = np.ones_like(data, dtype=np.float32) * 2
-    joints_3d_visible[data == 0] = 0.0
+    joints_3d_visible[np.isnan(data)] = 0.0
+    joints_3d_visible = joints_3d_visible[:, :, 0]
 
     # data_train = data[:155]
     # data_test = data[155:]

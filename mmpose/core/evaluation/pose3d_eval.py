@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
+from icecream import ic
 
 from .mesh_eval import compute_similarity_transform
 
@@ -49,7 +50,8 @@ def keypoint_mpjpe(pred, gt, mask, alignment='none'):
         pred = pred * scale_factor[:, None, None]
     else:
         raise ValueError(f'Invalid value for alignment: {alignment}')
-
+    ic(mask)
+    ic(np.linalg.norm(pred - gt, ord=2, axis=-1)[mask])
     error = np.linalg.norm(pred - gt, ord=2, axis=-1)[mask].mean()
 
     return error
@@ -106,6 +108,7 @@ def keypoint_3d_pck(pred, gt, mask, alignment='none', threshold=0.15):
         raise ValueError(f'Invalid value for alignment: {alignment}')
 
     error = np.linalg.norm(pred - gt, ord=2, axis=-1)
+
     pck = (error < threshold).astype(np.float32)[mask].mean() * 100
 
     return pck

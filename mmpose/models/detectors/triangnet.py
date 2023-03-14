@@ -118,9 +118,16 @@ class TriangNet(BasePose):
                             for training, `return loss=False` for validation & test.
                         return_heatmap (bool) : Option to return heatmap.
                     Returns:
-                        dict|tuple: if `return loss` is true, then return losses. \
-                            Otherwise, return predicted poses, boxes, image paths \
-                            and heatmaps.
+                        dict|tuple:
+                            test output: [
+                                          'output_heatmap'
+                                          'preds': 3d joints prediction
+                                          'kp_2d_preds': 2d joints prediction
+                                          'res_triang': triangulation residuals
+                                          'scores': the confidence from score_head or [1, ...]
+                                          'img_metas' containing 3d ground truth
+                                          ]
+
         """
         if return_loss:
             return self.forward_train(img,
@@ -186,7 +193,17 @@ class TriangNet(BasePose):
         return losses
 
     def forward_test(self, img, proj_matrices, img_metas, return_heatmap, **kwargs):
-        """Defines the computation performed at every call when testing"""
+        """Defines the computation performed at every call when testing
+        dict|tuple:
+                            test output: [
+                                          'output_heatmap'
+                                          'preds': 3d joints prediction
+                                          'kp_2d_preds': 2d joints prediction
+                                          'res_triang': triangulation residuals
+                                          'scores': the confidence from score_head or [1, ...]
+                                          'img_metas' containing 3d ground truth
+                                          ]
+        """
         [bs, num_cams, num_channel, h_img, w_img] = img.shape
         img = img.reshape(-1, *img.shape[2:])
         h_img, w_img = img.shape[-2], img.shape[-1]
@@ -198,9 +215,9 @@ class TriangNet(BasePose):
                 features, flip_pairs=None)
 
         if self.with_score_head:
-            scores = self.score_head(features)
+            scores = self.score_head(features)  # [bs*num_cams, num_joints]
         else:
-            scores = torch.ones(*img.shape[:2], dtype=torch.float32, device=img.device)
+            scores = torch.ones(*heatmap.shape[:2], dtype=torch.float32, device=img.device)
 
         if self.test_cfg.get('flip_test', True):
             img_flipped = img.flip(3)

@@ -72,29 +72,39 @@ if __name__ == "__main__":
     config = mmcv.Config.fromfile(config_file)
     dataset_info = DatasetInfo(config._cfg_dict['dataset_info'])
     dataset = build_dataset(config.data.test)
-    ic(len(dataset))
+    dataloader = build_dataloader(dataset, samples_per_gpu=5, workers_per_gpu=2)
+
+    # ic(len(dataset))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     checkpoint = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_dannce_2d_p12_256x256/best_AP_epoch_100.pth"
     model = init_pose_model(config_file, checkpoint=checkpoint, device=device)
 
     # model = init_pose_model(config_file, device=device)
     num_cams = 6
-    dataloader = build_dataloader(dataset, samples_per_gpu=5, workers_per_gpu=2)
 
     results = []
-    for i in range(1):
-        _, a = next(enumerate(dataloader))
-        ic(a['img_metas'].data[0])
+
+    aa = enumerate(dataloader)
+    for i in range(2):
+        _, a = next(aa)
+        ic(a.keys())
+        # ic(a['joints_4d'].shape)
+        # ic(a['joints_4d_visible'].shape)
+        # ic(a['img_metas'].data[0])
         result = model.forward(a['img'].to(device),
                                img_metas=a['img_metas'],
                                proj_matrices=a['proj_mat'].to(device),
                                return_loss=False, return_heatmap=False)
         ic(i, result.keys())
-        ic(result['img_metas'][0]['image_file'])
-        ic(result['img_metas'][0]['id'])
+        for j in range(3):
+            ic(result['img_metas'][j].keys())
+            ic(result['img_metas'][j]['image_file'])
+            ic(result['img_metas'][j]['scene_id'])
+            ic(result['img_metas'][j]['joints_4d_visible'])
         results.append(result)
 
-    # evaluate_results = dataset.evaluate(results,
-    #                                     res_folder="D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/temp",
-    #                                     metric='mpjpe'
-    #                                     )
+    evaluate_results = dataset.evaluate(results,
+                                        res_folder="D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/temp",
+                                        metric='mpjpe'
+                                        )
+    ic(evaluate_results)

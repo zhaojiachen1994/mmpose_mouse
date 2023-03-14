@@ -4,12 +4,16 @@ import json
 import os.path as osp
 import pickle
 import tempfile
+from collections import OrderedDict
 
+import mmcv
 import numpy as np
+from icecream import ic
 from mmcv import Config
 from xtcocotools.coco import COCO
 from xtcocotools.cocoeval import COCOeval
 
+from mmpose.core.evaluation import keypoint_mpjpe
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.base import Kpt3dMviewRgbImgDirectDataset
 
@@ -60,6 +64,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         self.nms_thr = data_cfg['nms_thr']
         self.oks_thr = data_cfg['oks_thr']
         self.vis_thr = data_cfg['vis_thr']
+        self.data_cfg = data_cfg
 
         if coco_style:
             self.coco = COCO(ann_file)
@@ -86,7 +91,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         self.db = self._get_db(data_cfg)
 
         # get the 3d keypoint ground truth, here written as joints_4d to match the mmpose denotation
-        self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(data_cfg)
+        self.joints_4d_data = self._get_joints_3d(data_cfg)
 
     def _get_cam(self, calib):
         """Get camera parameters.
@@ -114,13 +119,13 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         gt_db = []
         for img_id in self.img_ids:
             img_ann = self.coco.loadImgs(img_id)[0]
+
             width = img_ann['width']
             height = img_ann['height']
             # num_joints = self.ann_info['num_joints']
             num_joints = data_cfg['num_joints']
             ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=False)
             objs = self.coco.loadAnns(ann_ids)
-
             # sanitize bboxes
             valid_objs = []
             for obj in objs:
@@ -170,6 +175,49 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
             gt_db.extend(rec)
         return gt_db
 
+    def _get_joints_3d(self, data_cfg):
+        """load the ground truth 3d keypoint, annoted as 4d in outer space"""
+        with open(self.ann_3d_file, 'rb') as f:
+            data = json.load(f)
+        return data
+
+        # data = np.array(data['joint_3d'])
+        # [num_sample, num_joints, _] = data.shape
+        #
+        # data[np.isnan(data)] = 0.0
+        #
+        # # joints_3d
+        # # joints_3d = np.zeros_like(data[:, data_cfg['dataset_channel'], :], dtype=np.float32)
+        # # joints_3d[:] = data[:, data_cfg['dataset_channel'], :]
+        # joints_3d = data[:, data_cfg['dataset_channel'], :]
+        #
+        # # joints_3d_visible
+        # joints_3d_visible = np.ones_like(joints_3d, dtype=np.float32)
+        # joints_3d_visible[joints_3d == 0] = 0.0
+        # joints_3d_visible = joints_3d_visible.reshape([-1, data_cfg['num_joints'], 3])
+        #
+        # roots_3d = data[:, 4, :]  # body_middle as root here
+        # return joints_3d, joints_3d_visible, roots_3d
+
+    def __getitem__(self, idx):
+        """Get the sample by a given index"""
+        results = {}
+        for c in range(self.num_cameras):
+            result = copy.deepcopy(self.db[self.num_cameras * idx + c])
+            scene_id = self.db[self.num_cameras * idx + c]['scene_id']
+            result['ann_info'] = self.ann_info
+            result['camera_0'] = self.cameras[c]
+            result['camera'] = copy.deepcopy(self.cameras[c])
+            result['joints_4d'] = \
+                np.array(self.joints_4d_data[str(scene_id)]['joints_3d'])[self.data_cfg['dataset_channel'], :]
+            result['joints_4d_visible'] = \
+                np.array(self.joints_4d_data[str(scene_id)]['joints_3d_visible'])[self.data_cfg['dataset_channel']]
+            # dummy label
+            result['label'] = 0,
+            results[c] = result
+
+        return self.pipeline(results)
+
     def evaluate(self, results, res_folder=None, metric='mAP', **kwargs):
         metrics = metric if isinstance(metric, list) else [metric]
         for _metric in metrics:
@@ -187,6 +235,32 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         kpts = []
         for result in results:  # results contain all batches in test set
             preds = result['preds']
+            img_metas = result['img_metas']
+            batch_size = len(img_metas)
+            for i in range(batch_size):  # result in a batch
+                kpts.append({
+                    'keypoints': preds[i],
+                    'joints_4d': img_metas[i]['joints_4d'],
+                    'joints_4d_visible': img_metas[i]['joints_4d_visible'],
+                })
+        mmcv.dump(kpts, res_file)
+
+        name_value_tuples = []
+        for _metric in metrics:
+            if _metric == 'mpjpe':
+                _nv_tuples = self._report_mpjpe(kpts)
+            elif _metric == 'p-mpjpe':
+                _nv_tuples = self._report_mpjpe(kpts, mode='p-mpjpe')
+            elif _metric == 'n-mpjpe':
+                _nv_tuples = self._report_mpjpe(kpts, mode='n-mpjpe')
+            else:
+                raise NotImplementedError
+            name_value_tuples.extend(_nv_tuples)
+
+        if tmp_folder is not None:
+            tmp_folder.cleanup()
+
+        return OrderedDict(name_value_tuples)
 
     # if 'type' in kwargs:
     #     if kwargs['type'] == '3d':
@@ -274,45 +348,53 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
     #
     #         return name_value
 
-    def _get_joints_3d(self, data_cfg):
-        """load the ground truth 3d keypoint, annoted as 4d in outer space"""
-        with open(self.ann_3d_file, 'rb') as f:
-            data = json.load(f)
-        return data
+    def _report_mpjpe(self, keypoint_results, mode='mpjpe'):
+        """Cauculate mean per joint position error (MPJPE) or its variants like
+        P-MPJPE or N-MPJPE.
 
-        # data = np.array(data['joint_3d'])
-        # [num_sample, num_joints, _] = data.shape
-        #
-        # data[np.isnan(data)] = 0.0
-        #
-        # # joints_3d
-        # # joints_3d = np.zeros_like(data[:, data_cfg['dataset_channel'], :], dtype=np.float32)
-        # # joints_3d[:] = data[:, data_cfg['dataset_channel'], :]
-        # joints_3d = data[:, data_cfg['dataset_channel'], :]
-        #
-        # # joints_3d_visible
-        # joints_3d_visible = np.ones_like(joints_3d, dtype=np.float32)
-        # joints_3d_visible[joints_3d == 0] = 0.0
-        # joints_3d_visible = joints_3d_visible.reshape([-1, data_cfg['num_joints'], 3])
-        #
-        # roots_3d = data[:, 4, :]  # body_middle as root here
-        # return joints_3d, joints_3d_visible, roots_3d
+        Args:
+            keypoint_results (list): Keypoint predictions. See
+                'Body3DH36MDataset.evaluate' for details.
+            mode (str): Specify mpjpe variants. Supported options are:
 
-    def __getitem__(self, idx):
-        """Get the sample by a given index"""
-        results = {}
-        for c in range(self.num_cameras):
-            result = copy.deepcopy(self.db[self.num_cameras * idx + c])
-            result['ann_info'] = self.ann_info
-            result['camera_0'] = self.cameras[c]
-            result['camera'] = copy.deepcopy(self.cameras[c])
-            result['joints_4d'] = self.joints_4d[idx]
-            result['joints_4d_visible'] = self.joints_4d_visible[idx]
-            # dummy label
-            result['label'] = 0,
-            results[c] = result
+                - ``'mpjpe'``: Standard MPJPE.
+                - ``'p-mpjpe'``: MPJPE after aligning prediction to groundtruth
+                    via a rigid transformation (scale, rotation and
+                    translation).
+                - ``'n-mpjpe'``: MPJPE after aligning prediction to groundtruth
+                    in scale only.
+        """
+        preds = []
+        gts = []
+        masks = []
+        for idx, result in enumerate(keypoint_results):
+            pred = result['keypoints']
+            gt = result['joints_4d']
+            mask = result['joints_4d_visible'] > 0
+            gts.append(gt)
+            preds.append(pred)
+            masks.append(mask)
+        preds = np.stack(preds)
+        gts = np.stack(gts)  # [num_samples, ]
+        masks = np.stack(masks) > 0  # [num_samples, num_joints]
 
-        return self.pipeline(results)
+        ic(preds, gts)
+        ic(masks)
+
+        err_name = mode.upper()
+        if mode == 'mpjpe':
+            alignment = 'none'
+        elif mode == 'p-mpjpe':
+            alignment = 'procrustes'
+        elif mode == 'n-mpjpe':
+            alignment = 'scale'
+        else:
+            raise ValueError(f'Invalid mode: {mode}')
+
+        error = keypoint_mpjpe(preds, gts, masks, alignment)
+        ic(error)
+        name_value_tuples = [(err_name, error)]
+        return name_value_tuples
 
     def _write_coco_keypoint_results(self, keypoints, res_file):
         """helper function for evaluate, Write results into a json file."""
@@ -389,4 +471,4 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
 
 
 if __name__ == "__main__":
-    print("---")
+    ic("---")
