@@ -3,6 +3,7 @@ import copy
 import json
 import os.path as osp
 import pickle
+import tempfile
 
 import numpy as np
 from mmcv import Config
@@ -15,7 +16,7 @@ from mmpose.datasets.datasets.base import Kpt3dMviewRgbImgDirectDataset
 
 @DATASETS.register_module()
 class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
-    ALLOWED_METRICS = {'mpjpe', 'mAP'}
+    ALLOWED_METRICS = {'mpjpe'}
 
     def __init__(self,
                  ann_file,
@@ -157,6 +158,8 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
                     'image_file': image_file,
                     'joints_3d': joints_3d,
                     'joints_3d_visible': joints_3d_visible,
+                    'scene_id': obj['scene_id'],
+                    'cam_id': obj['cam_id'],
                     'bbox': obj['clean_bbox'][:4],
                     'rotation': 0,
                     'dataset': self.dataset_name,
@@ -168,11 +171,27 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         return gt_db
 
     def evaluate(self, results, res_folder=None, metric='mAP', **kwargs):
+        metrics = metric if isinstance(metric, list) else [metric]
+        for _metric in metrics:
+            if _metric not in self.ALLOWED_METRICS:
+                raise ValueError(
+                    f'Unsupported metric "{_metric}" for human3.6 dataset.'
+                    f'Supported metrics are {self.ALLOWED_METRICS}')
+        if res_folder is not None:
+            tmp_folder = None
+            res_file = osp.join(res_folder, 'result_keypoints.json')
+        else:
+            tmp_folder = tempfile.TemporaryDirectory()
+            res_file = osp.join(tmp_folder.name, 'result_keypoints.json')
+
+        kpts = []
+        for result in results:  # results contain all batches in test set
+            preds = result['preds']
 
     # if 'type' in kwargs:
     #     if kwargs['type'] == '3d':
     #         pass
-    #     # todo: add the 3d evaluation code
+    #
     #     elif kwargs['type'] == '2d':
     #         metrics = metric if isinstance(metric, list) else [metric]
     #         allowed_metrics = ['mAP']
@@ -259,23 +278,25 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         """load the ground truth 3d keypoint, annoted as 4d in outer space"""
         with open(self.ann_3d_file, 'rb') as f:
             data = json.load(f)
-        data = np.array(data['joint_3d'])
-        [num_sample, num_joints, _] = data.shape
+        return data
 
-        data[np.isnan(data)] = 0.0
-
-        # joints_3d
-        # joints_3d = np.zeros_like(data[:, data_cfg['dataset_channel'], :], dtype=np.float32)
-        # joints_3d[:] = data[:, data_cfg['dataset_channel'], :]
-        joints_3d = data[:, data_cfg['dataset_channel'], :]
-
-        # joints_3d_visible
-        joints_3d_visible = np.ones_like(joints_3d, dtype=np.float32)
-        joints_3d_visible[joints_3d == 0] = 0.0
-        joints_3d_visible = joints_3d_visible.reshape([-1, data_cfg['num_joints'], 3])
-
-        roots_3d = data[:, 4, :]  # body_middle as root here
-        return joints_3d, joints_3d_visible, roots_3d
+        # data = np.array(data['joint_3d'])
+        # [num_sample, num_joints, _] = data.shape
+        #
+        # data[np.isnan(data)] = 0.0
+        #
+        # # joints_3d
+        # # joints_3d = np.zeros_like(data[:, data_cfg['dataset_channel'], :], dtype=np.float32)
+        # # joints_3d[:] = data[:, data_cfg['dataset_channel'], :]
+        # joints_3d = data[:, data_cfg['dataset_channel'], :]
+        #
+        # # joints_3d_visible
+        # joints_3d_visible = np.ones_like(joints_3d, dtype=np.float32)
+        # joints_3d_visible[joints_3d == 0] = 0.0
+        # joints_3d_visible = joints_3d_visible.reshape([-1, data_cfg['num_joints'], 3])
+        #
+        # roots_3d = data[:, 4, :]  # body_middle as root here
+        # return joints_3d, joints_3d_visible, roots_3d
 
     def __getitem__(self, idx):
         """Get the sample by a given index"""

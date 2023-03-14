@@ -71,7 +71,8 @@ if __name__ == "__main__":
     # results_path = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/results/try_1229_mview"
     config = mmcv.Config.fromfile(config_file)
     dataset_info = DatasetInfo(config._cfg_dict['dataset_info'])
-    dataset = build_dataset(config.data.train)
+    dataset = build_dataset(config.data.test)
+    ic(len(dataset))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     checkpoint = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_dannce_2d_p12_256x256/best_AP_epoch_100.pth"
     model = init_pose_model(config_file, checkpoint=checkpoint, device=device)
@@ -81,6 +82,19 @@ if __name__ == "__main__":
     dataloader = build_dataloader(dataset, samples_per_gpu=5, workers_per_gpu=2)
 
     results = []
-    for i in range(5):
+    for i in range(1):
         _, a = next(enumerate(dataloader))
-        result = model.forward()
+        ic(a['img_metas'].data[0])
+        result = model.forward(a['img'].to(device),
+                               img_metas=a['img_metas'],
+                               proj_matrices=a['proj_mat'].to(device),
+                               return_loss=False, return_heatmap=False)
+        ic(i, result.keys())
+        ic(result['img_metas'][0]['image_file'])
+        ic(result['img_metas'][0]['id'])
+        results.append(result)
+
+    # evaluate_results = dataset.evaluate(results,
+    #                                     res_folder="D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/temp",
+    #                                     metric='mpjpe'
+    #                                     )
