@@ -72,6 +72,8 @@ if __name__ == "__main__":
     config = mmcv.Config.fromfile(config_file)
     dataset_info = DatasetInfo(config._cfg_dict['dataset_info'])
     dataset = build_dataset(config.data.test)
+    dataset = build_dataset(config.data.test, dict(test_mode=True))
+
     dataloader = build_dataloader(dataset, samples_per_gpu=5, workers_per_gpu=2)
 
     # ic(len(dataset))

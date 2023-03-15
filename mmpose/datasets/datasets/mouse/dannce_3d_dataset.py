@@ -378,9 +378,6 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
         gts = np.stack(gts)  # [num_samples, ]
         masks = np.stack(masks) > 0  # [num_samples, num_joints]
 
-        ic(preds, gts)
-        ic(masks)
-
         err_name = mode.upper()
         if mode == 'mpjpe':
             alignment = 'none'
@@ -392,8 +389,8 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
             raise ValueError(f'Invalid mode: {mode}')
 
         error = keypoint_mpjpe(preds, gts, masks, alignment)
-        ic(error)
         name_value_tuples = [(err_name, error)]
+        ic(name_value_tuples)
         return name_value_tuples
 
     def _write_coco_keypoint_results(self, keypoints, res_file):

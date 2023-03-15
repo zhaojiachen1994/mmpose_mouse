@@ -4,7 +4,6 @@
 import warnings
 
 import torch
-from icecream import ic
 
 from .base import BasePose
 from .. import builder
@@ -91,12 +90,12 @@ class TriangNet(BasePose):
 
     @auto_fp16(apply_to=('img',))
     def forward(self,
-                img,
+                img=None,
+                proj_mat=None,
                 img_metas=None,
-                proj_matrices=None,
                 target=None,
                 target_weight=None,
-                kpt_3d_gt=None,
+                joints_4d=None,
                 return_loss=True,
                 return_heatmap=False,
                 **kwargs):
@@ -108,11 +107,11 @@ class TriangNet(BasePose):
                         the outer list indicating test time augmentations.
                     Args:
                         img: Input images, tensor [bs, num_cameras, 3, h_img, w_img]
-                        proj_matrices: tensor [bs, num_cameras, 3, 4]
+                        proj_mat: tensor [bs, num_cameras, 3, 4]
                         target (torch.Tensor[NxKxHxW]): Target heatmaps.
                         target_weight (torch.Tensor[NxKx1]): Weights across
                             different joint types.
-                        kpt_3d_gt (tensor [bs, num_joints, 3]): the ground-truth 3d keypoint coordinates.
+                        joints_4d (tensor [bs, num_joints, 3]): the ground-truth 3d keypoint coordinates.
                         img_metas (list(dict)): Information about data augmentation
                         return_loss (bool): Option to `return loss`. `return loss=True`
                             for training, `return loss=False` for validation & test.
@@ -131,29 +130,29 @@ class TriangNet(BasePose):
         """
         if return_loss:
             return self.forward_train(img,
-                                      proj_matrices,
+                                      proj_mat,
                                       img_metas,
                                       target,
                                       target_weight,
-                                      kpt_3d_gt,
+                                      joints_4d,
                                       **kwargs
                                       )
         else:
             return self.forward_test(
                 img,
-                proj_matrices,
+                proj_mat,
                 img_metas,
                 return_heatmap,
                 **kwargs)
 
-    def forward_train(self, img, proj_matrices, img_metas, target,
-                      target_weight, kpt_3d_gt, **kwargs):
+    def forward_train(self, img, proj_mat, img_metas, target,
+                      target_weight, joints_4d, joints_4d_visible, **kwargs):
         """Defines the computation performed at every call when training.
                 img: input image [bs, num_cams, num_channel, h_img, w_img]
-                proj_matrices: project matrices [bs, num_cams, 3, 4]
+                proj_mat: project matrices [bs, num_cams, 3, 4]
                 target: the ground-truth 2d keypoint heatmap, [bs, num_cams, h_map, w_map]
                 target_weight: Weights across different joint types. [N, num_joints, 3]
-                kpt_3d_gt: the ground-truth 3d keypoint coordinates, [bs, num_joints, 3]
+                joints_4d: the ground-truth 3d keypoint coordinates, [bs, num_joints, 3]
                 """
         [bs, num_cams, num_channel, h_img, w_img] = img.shape
         h_map, w_map = target.shape[-2], target.shape[-1]
@@ -168,10 +167,10 @@ class TriangNet(BasePose):
             scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
         else:
             scores = torch.ones(*target.shape[:2], dtype=torch.float32, device=target.device)
-        ic(scores.shape)
+        # ic(scores.shape)
         if self.with_triangulate_head:
             kpt_3d_pred, res_triang, kp_2d_croped, kp_2d_heatmap = \
-                self.triangulate_head(heatmap, proj_matrices, scores)
+                self.triangulate_head(heatmap, proj_mat, scores)
 
         # if return loss
         losses = dict()
@@ -179,12 +178,15 @@ class TriangNet(BasePose):
                 target is not None and \
                 self.train_cfg.get('use_2d_sup', True):
             keypoint2d_losses = self.keypoint_head.get_loss(heatmap, target, target_weight)
+
             losses.update(keypoint2d_losses)
             keypoint_accuracy = self.keypoint_head.get_accuracy(heatmap, target, target_weight)
             losses.update(keypoint_accuracy)
 
-        if self.with_triangulate_head and kpt_3d_gt is not None and self.train_cfg.get('use_3d_sup', True):
-            sup_3d_loss = self.triangulate_head.get_sup_loss(kpt_3d_pred, kpt_3d_gt, target_weight)
+        if self.with_triangulate_head and joints_4d is not None and self.train_cfg.get('use_3d_sup', True):
+            sup_3d_loss = self.triangulate_head.get_sup_loss(kpt_3d_pred, joints_4d, joints_4d_visible)
+            # kpt_3d_pred is the model predicted 3d joint coordinates
+            # joints_4d is the ground-truth 3d joint coordinates
             losses.update(sup_3d_loss)
 
         if self.with_triangulate_head and self.train_cfg.get('use_3d_unsup', True):
@@ -192,7 +194,7 @@ class TriangNet(BasePose):
             losses.update(unsup_3d_loss)
         return losses
 
-    def forward_test(self, img, proj_matrices, img_metas, return_heatmap, **kwargs):
+    def forward_test(self, img, proj_mat, img_metas, return_heatmap, **kwargs):
         """Defines the computation performed at every call when testing
         dict|tuple:
                             test output: [
@@ -236,15 +238,72 @@ class TriangNet(BasePose):
             result['output_heatmap'] = output_heatmap
 
         if self.with_triangulate_head:
-            kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_matrices, scores)
+            kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_mat, scores)
             result['preds'] = kp_3d.detach().cpu().numpy()
             result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()
             result['res_triang'] = res_triang.detach().cpu().numpy()
             result['scores'] = scores.detach().cpu().numpy()
 
         if img_metas is not None:
-            result['img_metas'] = img_metas.data[0]  # using the img_metas to get the 3d global ground truth
+            result['img_metas'] = img_metas  # using the img_metas to get the 3d global ground truth
         return result
+
+    def train_step(self, data_batch, optimizer, **kwargs):
+        """The iteration step during training.
+
+        This method defines an iteration step during training, except for the
+        back propagation and optimizer updating, which are done in an optimizer
+        hook. Note that in some complicated cases or models, the whole process
+        including back propagation and optimizer updating is also defined in
+        this method, such as GAN.
+
+        Args:
+            data_batch (dict): The output of dataloader.
+            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
+                runner is passed to ``train_step()``. This argument is unused
+                and reserved.
+
+        Returns:
+            dict: It should contain at least 3 keys: ``loss``, ``log_vars``,
+                ``num_samples``.
+                ``loss`` is a tensor for back propagation, which can be a
+                weighted sum of multiple losses.
+                ``log_vars`` contains all the variables to be sent to the
+                logger.
+                ``num_samples`` indicates the batch size (when the model is
+                DDP, it means the batch size on each GPU), which is used for
+                averaging the logs.
+        """
+        # ic(optimizer)
+        # ic(len(optimizer['backbone'].param_groups[0]['params']))
+        #
+        # ic(len(optimizer['keypoint_head'].param_groups[0]['params']))
+        # ic(len(optimizer['score_head'].param_groups[0]['params']))
+        # optimizer.zero_grad()
+        optimizer['score_head'].zero_grad()
+
+        losses = self.forward(**data_batch)
+        loss, log_vars = self._parse_losses(losses)
+        loss.backward()
+        optimizer['score_head'].step()
+        outputs = dict(
+            loss=loss,
+            log_vars=log_vars,
+            num_samples=len(next(iter(data_batch.values()))))
+        return outputs
+
+    def val_step(self, data_batch, **kwargs):
+        """The iteration step during validation.
+
+        This method shares the same signature as :func:`train_step`, but used
+        during val epochs. Note that the evaluation after training epochs is
+        not implemented with this method, but an evaluation hook.
+        """
+        results = self.forward(return_loss=False, **data_batch)
+
+        outputs = dict(results=results)
+
+        return outputs
 
     def show_result(self,
                     imgs,

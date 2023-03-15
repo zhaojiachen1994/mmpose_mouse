@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from icecream import ic
 
 from mmpose.models.builder import build_loss
 from ..builder import HEADS
@@ -164,6 +165,7 @@ class TriangulateHead(nn.Module):
         # norm confidences
         confidences = confidences.view(batch_size, n_cams, *confidences.shape[1:])
         confidences = confidences / confidences.sum(dim=1, keepdim=True)
+        ic(confidences.shape)
         confidences = confidences + 1e-5
 
         # ic(kp_2d_croped.requires_grad, confidences.requires_grad)
@@ -190,7 +192,7 @@ class TriangulateHead(nn.Module):
                         self.triangulate_point(proj_matrices[batch_i], points, confidence)
         return kp_3d, res_triang, kp_2d_croped, kp_2d_heatmap
 
-    def get_sup_loss(self, output, target, target_weight):
+    def get_sup_loss(self, output, target, target_visible=None):
         """Calculate supervised 3d keypoint regressive loss.
 
         Args:
@@ -203,8 +205,16 @@ class TriangulateHead(nn.Module):
         losses = dict()
 
         assert not isinstance(self.super_loss, nn.Sequential)
-        assert target.dim() == 3 and target_weight.dim() == 3
-        losses['sup_3d_loss'] = self.super_loss(output, target, target_weight)
+        # assert target.dim() == 3 and target_weight.dim() == 3
+        # print(output.shape, target.shape, target_visible.shape)
+        # print(output)
+        # print(target)
+        # print(target_visible > 0)
+        # print(output[target_visible > 0].shape)
+        output = output[target_visible > 0].double()
+        target = target[target_visible > 0].double()
+
+        losses['sup_3d_loss'] = self.super_loss(output, target)
         return losses
 
     def get_unSup_loss(self, res_triang):
