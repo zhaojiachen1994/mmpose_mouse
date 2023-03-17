@@ -135,7 +135,6 @@ train_pipeline = [
 ]
 eval_pipeline = train_pipeline
 test_pipeline = eval_pipeline
-
 data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
 data = dict(
     samples_per_gpu=4,

@@ -84,12 +84,8 @@ mouse1229_dataset_info = dict(
 mouse1229_channel_cfg = dict(
     num_output_channels=12,
     dataset_joints=12,
-    dataset_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 16, 19
-    ],
-    inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 16, 19
-    ])
+    dataset_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14],
+    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14])
 
 mouse1229_data_cfg = dict(
     image_size=[256, 256],
@@ -110,5 +106,3 @@ mouse1229_data_cfg = dict(
     cube_size=[0.1, 0.1, 0.1],
     num_cameras=6,
     use_different_joint_weights=False)
-
-mouse1229_data_root = 'D:/Datasets/transfer_mouse/onemouse1229'

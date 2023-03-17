@@ -132,8 +132,12 @@ dannce_dataset_info = dict(
 dannce_channel_cfg = dict(
     num_output_channels=12,
     dataset_joints=12,
-    dataset_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14],
-    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14])
+    dataset_channel=[
+        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 16, 19
+    ],
+    inference_channel=[
+        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, 16, 19
+    ])
 
 dannce_data_cfg = dict(
     image_size=[256, 256],
@@ -155,5 +159,3 @@ dannce_data_cfg = dict(
     num_cameras=6,
     use_different_joint_weights=False
 )
-
-dannce_data_root = 'D:/Datasets/transfer_mouse/dannce_20230130'

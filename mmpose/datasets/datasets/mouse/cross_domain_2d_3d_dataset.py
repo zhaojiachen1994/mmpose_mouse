@@ -14,19 +14,19 @@ class CrossDomain2d3dDataset(Dataset):
     a 3d target dataset without ground truth labels
     """
 
-    def __init__(self, source_dataset, target_dataset):
+    def __init__(self, source_data, target_data):
         super().__init__()
-        self.source_dataset = build_dataset(source_dataset)
-        self.target_dataset = build_dataset(target_dataset)
+        self.source_dataset = build_dataset(source_data)
+        self.target_dataset = build_dataset(target_data)
 
     def __len__(self):
         """Get the size of the dataset."""
         return len(self.target_dataset)
 
     def __getitem__(self, idx):
-        source_data = self.target_dataset[idx]
+        target_data = self.target_dataset[idx]
         rand_ind = np.random.randint(0, len(self.source_dataset))
-        target_data = self.source_dataset[rand_ind]
+        source_data = self.source_dataset[rand_ind]
         results = {}
         results['source_data'] = source_data
         results['target_data'] = target_data

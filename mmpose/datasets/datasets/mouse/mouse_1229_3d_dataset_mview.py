@@ -44,21 +44,22 @@ class Mouse12293dDatasetMview(Kpt3dMviewRgbImgDirectDataset):
         self.oks_thr = data_cfg['oks_thr']
         self.vis_thr = data_cfg['vis_thr']
         self.num_joints = data_cfg['num_joints']
+        self.data_cfg = data_cfg
         self.num_cameras = data_cfg['num_cameras']
         self.coco = COCO(ann_file)
         self.img_ids = self.coco.getImgIds()
         self.num_images = len(self.img_ids)
         self.id2name, self.name2id = self._get_mapping_id_name(
             self.coco.imgs)
-        self.db = self._get_db()
+        self.db = self._get_db(data_cfg)
         self.cams_params = self._get_cam_params(cam_file)
         # get the 3d keypoint ground truth, here written as joints_4d to match the mmpose denotation
-        self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(self.ann_3d_file)
+        self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(self.ann_3d_file, data_cfg)
 
     def __len__(self):
         return int(self.num_images / 4)
 
-    def _get_db(self):
+    def _get_db(self, data_cfg):
         """get the database"""
         gt_db = []
         for img_id in self.img_ids:
@@ -83,8 +84,8 @@ class Mouse12293dDatasetMview(Kpt3dMviewRgbImgDirectDataset):
             joints_3d = np.zeros((num_joints, 3), dtype=np.float32)
             joints_3d_visible = np.zeros((num_joints, 3), dtype=np.float32)
             keypoints = np.array(obj['keypoints']).reshape(-1, 3)
-            joints_3d[:, :2] = keypoints[:, :2]
-            joints_3d_visible[:, :2] = np.minimum(1, keypoints[:, 2:3])
+            joints_3d[:, :2] = keypoints[data_cfg['dataset_channel'], :2]
+            joints_3d_visible[:, :2] = np.minimum(1, keypoints[data_cfg['dataset_channel'], 2:3])
             image_file = osp.join(self.img_prefix, self.id2name[img_id])
 
             rec = {
@@ -112,11 +113,13 @@ class Mouse12293dDatasetMview(Kpt3dMviewRgbImgDirectDataset):
             new_cameras_params[k]['T'] = np.array(cameras_params[k]['T'])
         return new_cameras_params
 
-    def _get_joints_3d(self, ann_3d_file):
+    def _get_joints_3d(self, ann_3d_file, data_cfg):
         """load the ground truth 3d keypoint, annoted as 4d in outer space"""
         with open(ann_3d_file, 'rb') as f:
             data = json.load(f)
         data = np.array(data['joint_3d'])
+        data = data[:, data_cfg['dataset_channel'], :]
+
         [num_sample, num_joints, _] = data.shape
         data[np.isnan(data)] = 0.0
 

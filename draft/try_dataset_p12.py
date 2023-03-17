@@ -75,26 +75,27 @@ if __name__ == "__main__":
     config = mmcv.Config.fromfile(config_file)
     dataset_info = DatasetInfo(config._cfg_dict['dataset_info'])
     dataset = build_dataset(config.data.train)
-    dataloader = build_dataloader(dataset, samples_per_gpu=1, workers_per_gpu=1)
-    checkpoint = "D:/Pycharm Projects-win/mmpose/work_dirs/hrnet_gray" \
-                 "/hrnet_w48_mouse_dannce_256x256/best_AP_epoch_190.pth"
-    model = init_pose_model(config_file, checkpoint=checkpoint, device=device)
-
-    """dataset getitem"""
+    # dataloader = build_dataloader(dataset, samples_per_gpu=1, workers_per_gpu=1)
+    # checkpoint = "D:/Pycharm Projects-win/mmpose/work_dirs/hrnet_gray" \
+    #              "/hrnet_w48_mouse_dannce_256x256/best_AP_epoch_190.pth"
+    # model = init_pose_model(config_file, checkpoint=checkpoint, device=device)
+    #
+    # """dataset getitem"""
     for i in range(1):
         a = dataset.__getitem__(i)
-        img = torch.unsqueeze(a['img'], 0)
+        #     img = torch.unsqueeze(a['img'], 0)
         ic(a.keys())
-        ic(a['img_metas'].data['joints_3d'])
-        ic(a['img_metas'].data['image_file'])
-
-        result = model.forward(img.to(device),
-                               target=None,
-                               target_weight=None,
-                               img_metas=[a['img_metas'].data],
-                               return_loss=False,
-                               return_heatmap=False
-                               )
+        ic(a['target'].shape)
+    #     ic(a['img_metas'].data['joints_3d'])
+    #     ic(a['img_metas'].data['image_file'])
+    #
+    #     result = model.forward(img.to(device),
+    #                            target=None,
+    #                            target_weight=None,
+    #                            img_metas=[a['img_metas'].data],
+    #                            return_loss=False,
+    #                            return_heatmap=False
+    #                            )
 
     """dataloader"""
     # results = []
