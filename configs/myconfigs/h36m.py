@@ -72,7 +72,7 @@ model = dict(
         loss_3d_sup=dict(type='MSELoss',
                          use_target_weight=True,
                          loss_weight=1.),
-        det_conf_thr=0.5,
+        det_conf_thr=None,
         # train_cfg=train_cfg,
     ),
     train_cfg=dict(

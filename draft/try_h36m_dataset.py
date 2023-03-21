@@ -53,7 +53,7 @@ if __name__ == "__main__":
         _, a = next(enumerate(dataloader))
         ic(a['proj_mat'].shape)
         result = model.forward(a['img'], img_metas=a['img_metas'],
-                               proj_matrices=a['proj_mat'],
+                               proj_mat=a['proj_mat'],
                                return_loss=False, return_heatmap=False)
         ic(i, result.keys())
         results.append(result)
