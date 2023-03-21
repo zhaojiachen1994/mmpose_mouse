@@ -1,11 +1,15 @@
 import copy
 import json
 import os.path as osp
+import tempfile
+from collections import OrderedDict
 
+import mmcv
 import numpy as np
 from mmcv import Config
 from xtcocotools.coco import COCO
 
+from mmpose.core.evaluation import keypoint_mpjpe
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.base import Kpt3dMviewRgbImgDirectDataset
 
@@ -57,7 +61,7 @@ class Mouse12293dDatasetMview(Kpt3dMviewRgbImgDirectDataset):
         self.joints_4d, self.joints_4d_visible, _ = self._get_joints_3d(self.ann_3d_file, data_cfg)
 
     def __len__(self):
-        return int(self.num_images / 4)
+        return int(self.num_images / self.num_cameras)
 
     def _get_db(self, data_cfg):
         """get the database"""
@@ -148,5 +152,134 @@ class Mouse12293dDatasetMview(Kpt3dMviewRgbImgDirectDataset):
             results[c] = result
         return self.pipeline(results)
 
-    def evaluate(self, results, *args, **kwargs):
-        pass
+    def evaluate(self, results, res_folder=None, metric='mpjpe', **kwargs):
+        metrics = metric if isinstance(metric, list) else [metric]
+        for _metric in metrics:
+            if _metric not in self.ALLOWED_METRICS:
+                raise ValueError(
+                    f'Unsupported metric "{_metric}" for human3.6 dataset.'
+                    f'Supported metrics are {self.ALLOWED_METRICS}')
+        if res_folder is not None:
+            tmp_folder = None
+            res_file = osp.join(res_folder, 'result_keypoints.json')
+        else:
+            tmp_folder = tempfile.TemporaryDirectory()
+            res_file = osp.join(tmp_folder.name, 'result_keypoints.json')
+
+        kpts = []
+        for result in results:  # results contain all batches in test set
+            preds = result['preds']
+            img_metas = result['img_metas']
+            batch_size = len(img_metas)
+            for i in range(batch_size):  # result in a batch
+                kpts.append({
+                    'keypoints': preds[i],
+                    'joints_4d': img_metas[i]['joints_4d'],
+                    'joints_4d_visible': img_metas[i]['joints_4d_visible'],
+                })
+        mmcv.dump(kpts, res_file)
+
+        name_value_tuples = []
+        for _metric in metrics:
+            if _metric == 'mpjpe':
+                _nv_tuples = self._report_mpjpe(kpts)
+            elif _metric == 'p-mpjpe':
+                _nv_tuples = self._report_mpjpe(kpts, mode='p-mpjpe')
+            elif _metric == 'n-mpjpe':
+                _nv_tuples = self._report_mpjpe(kpts, mode='n-mpjpe')
+            else:
+                raise NotImplementedError
+            name_value_tuples.extend(_nv_tuples)
+
+        if tmp_folder is not None:
+            tmp_folder.cleanup()
+
+        return OrderedDict(name_value_tuples)
+
+    def _report_mpjpe(self, keypoint_results, mode='mpjpe'):
+        """Cauculate mean per joint position error (MPJPE) or its variants like
+        P-MPJPE or N-MPJPE.
+
+        Args:
+            keypoint_results (list): Keypoint predictions. See
+                'Body3DH36MDataset.evaluate' for details.
+            mode (str): Specify mpjpe variants. Supported options are:
+
+                - ``'mpjpe'``: Standard MPJPE.
+                - ``'p-mpjpe'``: MPJPE after aligning prediction to groundtruth
+                    via a rigid transformation (scale, rotation and
+                    translation).
+                - ``'n-mpjpe'``: MPJPE after aligning prediction to groundtruth
+                    in scale only.
+        """
+        preds = []
+        gts = []
+        masks = []
+        for idx, result in enumerate(keypoint_results):
+            pred = result['keypoints']
+            gt = result['joints_4d']
+            mask = result['joints_4d_visible'] > 0
+            gts.append(gt)
+            preds.append(pred)
+            masks.append(mask)
+        preds = np.stack(preds)
+        gts = np.stack(gts)  # [num_samples, ]
+        masks = np.stack(masks) > 0  # [num_samples, num_joints]
+        masks = masks[:, :, 0]
+        err_name = mode.upper()
+        if mode == 'mpjpe':
+            alignment = 'none'
+        elif mode == 'p-mpjpe':
+            alignment = 'procrustes'
+        elif mode == 'n-mpjpe':
+            alignment = 'scale'
+        else:
+            raise ValueError(f'Invalid mode: {mode}')
+
+        error = keypoint_mpjpe(preds, gts, masks, alignment)
+        name_value_tuples = [(err_name, error)]
+        return name_value_tuples
+
+    def _write_coco_keypoint_results(self, keypoints, res_file):
+        """helper function for evaluate, Write results into a json file."""
+        data_pack = [{
+            'cat_id': self._class_to_coco_ind[cls],
+            'cls_ind': cls_ind,
+            'cls': cls,
+            'ann_type': 'keypoints',
+            'keypoints': keypoints
+        } for cls_ind, cls in enumerate(self.classes)
+            if not cls == '__background__']
+
+        results = self._coco_keypoint_results_one_category_kernel(data_pack[0])
+
+        with open(res_file, 'w') as f:
+            json.dump(results, f, sort_keys=True, indent=4)
+
+    def _coco_keypoint_results_one_category_kernel(self, data_pack):
+        """helper function for evaluate, Get coco keypoint results."""
+        cat_id = data_pack['cat_id']
+        keypoints = data_pack['keypoints']
+        cat_results = []
+
+        for img_kpts in keypoints:
+            if len(img_kpts) == 0:
+                continue
+
+            _key_points = np.array(
+                [img_kpt['keypoints'] for img_kpt in img_kpts])
+            key_points = _key_points.reshape(-1,
+                                             self.ann_info['num_joints'] * 3)
+
+            result = [{
+                'image_id': img_kpt['image_id'],
+                'category_id': cat_id,
+                'keypoints': key_point.tolist(),
+                'score': float(img_kpt['score']),
+                'center': img_kpt['center'].tolist(),
+                'scale': img_kpt['scale'].tolist()
+            } for img_kpt, key_point in zip(img_kpts, key_points)]
+
+            cat_results.extend(result)
+
+        return cat_results

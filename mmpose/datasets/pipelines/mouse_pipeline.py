@@ -19,7 +19,7 @@ class SquareBbox:
     bbox is defined by xywh
 
     Required key: 'bbox', 'ann_info'
-    Modified key: 'bbox'
+    Modified key: 'bbox',
 
     return bbox by xyxy
 
@@ -71,6 +71,7 @@ class CropImage:
         # update the ground truth keypoint coord
         left = results['bbox'][0]
         upper = results['bbox'][1]
+
         joint_3d = results['joints_3d'] # 2d indeed
         joint_3d[:, 0] = joint_3d[:, 0] - left
         joint_3d[:, 1] = joint_3d[:, 1] - upper

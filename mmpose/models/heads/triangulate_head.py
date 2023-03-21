@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from icecream import ic
 
 from mmpose.models.builder import build_loss
 from ..builder import HEADS
@@ -163,12 +162,10 @@ class TriangulateHead(nn.Module):
         res_triang = torch.zeros(batch_size, n_joints, dtype=torch.float32, device=kp_2d_croped.device)
 
         # norm confidences
+        # if len(confidences.shape) == 2:
         confidences = confidences.view(batch_size, n_cams, *confidences.shape[1:])
-        confidences = confidences / confidences.sum(dim=1, keepdim=True)
-        ic(confidences.shape)
+        confidences = confidences / confidences.sum(dim=1, keepdim=True)  # [num_sample, num_cams, num_joints]
         confidences = confidences + 1e-5
-
-        # ic(kp_2d_croped.requires_grad, confidences.requires_grad)
 
         if self.det_conf_thr is not None:
             for batch_i in range(batch_size):
@@ -177,7 +174,6 @@ class TriangulateHead(nn.Module):
                     cam_idx = torch.where(cams_detected)[0]
                     point = kp_2d_croped[batch_i, cam_idx, joint_i, :2]  # a joint in all views
                     confidence = confidences[batch_i, cam_idx, joint_i]
-                    # ic(cam_idx, point.shape, proj_matrices.shape, confidences.shape)
 
                     if torch.sum(cams_detected) < 2:
                         continue
@@ -191,6 +187,31 @@ class TriangulateHead(nn.Module):
                     kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = \
                         self.triangulate_point(proj_matrices[batch_i], points, confidence)
         return kp_3d, res_triang, kp_2d_croped, kp_2d_heatmap
+
+    def reproject(self, kp_3d, proj_matrices):
+        """
+        Args:
+            kp_3d: np.array, [bs, n_joints, 3]
+            proj_matrices: [bs, num_cams, 3, 4]
+        Returns:
+            pseudo_kp_2d: [bs, num_cams, num_joints, 2]
+        """
+        # if kp_3d.shape[-1] == 3:
+        #     kp_3d_temp = np.concatenate([kp_3d, torch.ones([*kp_3d.shape[:-1], 1])], dim=-1)
+        # pseudo_kp_2d = np.einsum('bcdk, bjk -> bcjd', proj_matrices, kp_3d_temp)
+        # pseudo_kp_2d = pseudo_kp_2d/(np.expand_dims(pseudo_kp_2d[..., -1], -1))
+        # pseudo_kp_2d = pseudo_kp_2d[..., :-1]
+        # return pseudo_kp_2d
+        kp_3d_temp = kp_3d.detach().clone()
+        if kp_3d_temp.shape[-1] == 3:
+            kp_3d_temp = torch.cat(
+                [kp_3d_temp, torch.ones([*kp_3d_temp.shape[:-1], 1], dtype=torch.float64, device=kp_3d_temp.device)],
+                dim=-1)
+
+        pseudo_kp_2d = torch.einsum('bcdk, bjk -> bcjd', proj_matrices, kp_3d_temp)
+        pseudo_kp_2d = pseudo_kp_2d / (pseudo_kp_2d[..., -1].unsqueeze(-1))
+        pseudo_kp_2d = pseudo_kp_2d[..., :-1]
+        return pseudo_kp_2d
 
     def get_sup_loss(self, output, target, target_visible=None):
         """Calculate supervised 3d keypoint regressive loss.

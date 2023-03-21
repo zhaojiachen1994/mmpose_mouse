@@ -15,11 +15,13 @@ from .posewarper import PoseWarper
 from .top_down import TopDown
 from .top_down_mview import TopDownMview
 from .triangnet import TriangNet
+from .triangnet_adv import AdvTriangNet
+from .triangnet_em import EmTriangNet
 
 __all__ = [
     'TopDown', 'AssociativeEmbedding', 'CID', 'ParametricMesh', 'MultiTask',
     'PoseLifter', 'Interhand3D', 'PoseWarper', 'DetectAndRegress',
     'VoxelCenterDetector', 'VoxelSinglePose', 'GestureRecognizer',
     'DisentangledKeypointRegressor',
-    'MouseNet_3d', 'MouseNet_2d', 'TriangNet', 'TopDownMview'
+    'MouseNet_3d', 'MouseNet_2d', 'TriangNet', 'TopDownMview', 'EmTriangNet', 'AdvTriangNet'
 ]

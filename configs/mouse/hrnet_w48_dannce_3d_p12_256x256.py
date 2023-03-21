@@ -127,11 +127,11 @@ train_pipeline = [
         ]),
     dict(
         type='DiscardDuplicatedItems',
-        keys_list=['dataset', 'ann_info', 'joints_4d', 'joints_4d_visible']
+        keys_list=['dataset', 'ann_info', 'joints_4d', 'joints_4d_visible', 'scene_id']
     ),
     dict(
         type='GroupCams',
-        keys=['img', 'target', 'target_weight', 'joints_3d', 'bbox']
+        keys=['img', 'target', 'target_weight', 'proj_mat', 'joints_3d', 'bbox']
     ),
 
     dict(

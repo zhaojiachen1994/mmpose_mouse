@@ -174,22 +174,20 @@ class TriangNet(BasePose):
 
         # if return loss
         losses = dict()
-        if self.with_keypoint_head and \
-                target is not None and \
-                self.train_cfg.get('use_2d_sup', True):
-            keypoint2d_losses = self.keypoint_head.get_loss(heatmap, target, target_weight)
-
-            losses.update(keypoint2d_losses)
+        if self.with_keypoint_head and target is not None:
+            if self.train_cfg.get('use_2d_sup', False):
+                keypoint2d_losses = self.keypoint_head.get_loss(heatmap, target, target_weight)
+                losses.update(keypoint2d_losses)
             keypoint_accuracy = self.keypoint_head.get_accuracy(heatmap, target, target_weight)
             losses.update(keypoint_accuracy)
 
-        if self.with_triangulate_head and joints_4d is not None and self.train_cfg.get('use_3d_sup', True):
+        if self.with_triangulate_head and joints_4d is not None and self.train_cfg.get('use_3d_sup', False):
             sup_3d_loss = self.triangulate_head.get_sup_loss(kpt_3d_pred, joints_4d, joints_4d_visible)
             # kpt_3d_pred is the model predicted 3d joint coordinates
             # joints_4d is the ground-truth 3d joint coordinates
             losses.update(sup_3d_loss)
 
-        if self.with_triangulate_head and self.train_cfg.get('use_3d_unsup', True):
+        if self.with_triangulate_head and self.train_cfg.get('use_3d_unsup', False):
             unsup_3d_loss = self.triangulate_head.get_unSup_loss(res_triang)
             losses.update(unsup_3d_loss)
         return losses
@@ -239,8 +237,9 @@ class TriangNet(BasePose):
 
         if self.with_triangulate_head:
             kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_mat, scores)
+
             result['preds'] = kp_3d.detach().cpu().numpy()
-            result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()
+            # result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()  # the detector 2d keypoint prediction
             result['res_triang'] = res_triang.detach().cpu().numpy()
             result['scores'] = scores.detach().cpu().numpy()
 
@@ -248,62 +247,55 @@ class TriangNet(BasePose):
             result['img_metas'] = img_metas  # using the img_metas to get the 3d global ground truth
         return result
 
-    def train_step(self, data_batch, optimizer, **kwargs):
-        """The iteration step during training.
+    # def train_step(self, data_batch, optimizer, **kwargs):
+    #     """The iteration step during training.
+    #
+    #     This method defines an iteration step during training, except for the
+    #     back propagation and optimizer updating, which are done in an optimizer
+    #     hook. Note that in some complicated cases or models, the whole process
+    #     including back propagation and optimizer updating is also defined in
+    #     this method, such as GAN.
+    #
+    #     Args:
+    #         data_batch (dict): The output of dataloader.
+    #         optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
+    #             runner is passed to ``train_step()``. This argument is unused
+    #             and reserved.
+    #
+    #     Returns:
+    #         dict: It should contain at least 3 keys: ``loss``, ``log_vars``,
+    #             ``num_samples``.
+    #             ``loss`` is a tensor for back propagation, which can be a
+    #             weighted sum of multiple losses.
+    #             ``log_vars`` contains all the variables to be sent to the
+    #             logger.
+    #             ``num_samples`` indicates the batch size (when the model is
+    #             DDP, it means the batch size on each GPU), which is used for
+    #             averaging the logs.
+    #     """
+    #     optimizer['score_head'].zero_grad()
+    #
+    #     losses = self.forward(**data_batch)
+    #     loss, log_vars = self._parse_losses(losses)
+    #     loss.backward()
+    #     optimizer['score_head'].step()
+    #     outputs = dict(
+    #         loss=loss,
+    #         log_vars=log_vars,
+    #         num_samples=len(next(iter(data_batch.values()))))
+    #     return outputs
 
-        This method defines an iteration step during training, except for the
-        back propagation and optimizer updating, which are done in an optimizer
-        hook. Note that in some complicated cases or models, the whole process
-        including back propagation and optimizer updating is also defined in
-        this method, such as GAN.
-
-        Args:
-            data_batch (dict): The output of dataloader.
-            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
-                runner is passed to ``train_step()``. This argument is unused
-                and reserved.
-
-        Returns:
-            dict: It should contain at least 3 keys: ``loss``, ``log_vars``,
-                ``num_samples``.
-                ``loss`` is a tensor for back propagation, which can be a
-                weighted sum of multiple losses.
-                ``log_vars`` contains all the variables to be sent to the
-                logger.
-                ``num_samples`` indicates the batch size (when the model is
-                DDP, it means the batch size on each GPU), which is used for
-                averaging the logs.
-        """
-        # ic(optimizer)
-        # ic(len(optimizer['backbone'].param_groups[0]['params']))
-        #
-        # ic(len(optimizer['keypoint_head'].param_groups[0]['params']))
-        # ic(len(optimizer['score_head'].param_groups[0]['params']))
-        # optimizer.zero_grad()
-        optimizer['score_head'].zero_grad()
-
-        losses = self.forward(**data_batch)
-        loss, log_vars = self._parse_losses(losses)
-        loss.backward()
-        optimizer['score_head'].step()
-        outputs = dict(
-            loss=loss,
-            log_vars=log_vars,
-            num_samples=len(next(iter(data_batch.values()))))
-        return outputs
-
-    def val_step(self, data_batch, **kwargs):
-        """The iteration step during validation.
-
-        This method shares the same signature as :func:`train_step`, but used
-        during val epochs. Note that the evaluation after training epochs is
-        not implemented with this method, but an evaluation hook.
-        """
-        results = self.forward(return_loss=False, **data_batch)
-
-        outputs = dict(results=results)
-
-        return outputs
+    # def val_step(self, data_batch, **kwargs):
+    #     """The iteration step during validation.
+    #
+    #     This method shares the same signature as :func:`train_step`, but used
+    #     during val epochs. Note that the evaluation after training epochs is
+    #     not implemented with this method, but an evaluation hook.
+    #     """
+    #     results = self.forward(return_loss=False, **data_batch)
+    #
+    #     outputs = dict(results=results)
+    #     return outputs
 
     def show_result(self,
                     imgs,

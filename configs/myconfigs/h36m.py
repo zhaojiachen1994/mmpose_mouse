@@ -16,12 +16,12 @@ channel_cfg = dict(
 """total model pretrain weights"""
 load_from = "D:/Pycharm Projects-win/mm_mouse/mmpose/official_checkpoint/hrnet_w48_h36m_256x256-78e88d08_20210621.pth"
 
-train_cfg = dict(
-    supervised_2d=True,  # use the 2d ground truth to train keypoint_head
-    contrastive_feature=True,  # use the sup_con_loss to train feature_head
-    supervised_3d=True,  # use the 3d ground truth to train triangulate_head
-    unSupervised_3d=False,  # use the triangulation residual loss to train triangulate_head
-),
+# train_cfg = dict(
+#     supervised_2d=True,  # use the 2d ground truth to train keypoint_head
+#     contrastive_feature=True,  # use the sup_con_loss to train feature_head
+#     supervised_3d=True,  # use the 3d ground truth to train triangulate_head
+#     unSupervised_3d=False,  # use the triangulation residual loss to train triangulate_head
+# ),
 
 """model config"""
 model = dict(
@@ -69,10 +69,16 @@ model = dict(
         img_shape=[256, 256],
         heatmap_shape=[64, 64],
         softmax_heatmap=True,
-        loss_3d_super=dict(type='MSELoss',
-                           use_target_weight=True,
-                           loss_weight=1.),
-        train_cfg=train_cfg,
+        loss_3d_sup=dict(type='MSELoss',
+                         use_target_weight=True,
+                         loss_weight=1.),
+        det_conf_thr=0.5,
+        # train_cfg=train_cfg,
+    ),
+    train_cfg=dict(
+        use_2d_sup=False,  # use the 2d ground truth to train keypoint_head
+        use_3d_sup=True,  # use the 3d ground truth to train triangulate_head
+        use_3d_unsup=False,  # use the triangulation residual loss to train triangulate_head
     ),
     test_cfg=dict(
         flip_test=False,

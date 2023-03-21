@@ -82,11 +82,11 @@ model = dict(
         extra=dict(final_conv_kernel=1, ),
         loss_keypoint=dict(type='JointsMSELoss', use_target_weight=True)),
 
-    score_head=dict(
-        type='GlobalAveragePoolingHead',
-        in_channels=48,
-        n_classes=channel_cfg['num_output_channels']
-    ),
+    # score_head=dict(
+    #     type='GlobalAveragePoolingHead',
+    #     in_channels=48,
+    #     n_classes=channel_cfg['num_output_channels']
+    # ),
 
     triangulate_head=dict(
         type='TriangulateHead',

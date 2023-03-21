@@ -8,14 +8,13 @@ import warnings
 import mmcv
 import torch
 import torch.distributed as dist
-from icecream import ic
 from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, OptimizerHook, get_dist_info)
-from mmcv.runner import init_dist, set_random_seed
+from mmcv.runner import (DistSamplerSeedHook, OptimizerHook, get_dist_info)
+from mmcv.runner import init_dist, set_random_seed, IterBasedRunner
 from mmcv.utils import digit_version
 from mmcv.utils import get_git_hash
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
 from mmpose import __version__
 from mmpose.apis import init_random_seed
@@ -95,121 +94,6 @@ def parse_args():
         os.environ['LOCAL_RANK'] = str(args.local_rank)
 
     return args
-
-
-def send_to_device(tensor, device):
-    """
-    Recursively sends the elements in a nested list/tuple/dictionary of tensors to a given device.
-
-    Args:
-        tensor (nested list/tuple/dictionary of :obj:`torch.Tensor`):
-            The data to send to a given device.
-        device (:obj:`torch.device`):
-            The device to send the data to
-
-    Returns:
-        The same data structure as :obj:`tensor` with all tensors sent to the proper device.
-    """
-    if isinstance(tensor, (list, tuple)):
-        return type(tensor)(send_to_device(t, device) for t in tensor)
-    elif isinstance(tensor, dict):
-        return type(tensor)({k: send_to_device(v, device) for k, v in tensor.items()})
-    elif not hasattr(tensor, "to"):
-        return tensor
-    return tensor.to(device)
-
-
-class ForeverDataIterator:
-    r"""A data iterator that will never stop producing data"""
-
-    def __init__(self, data_loader: DataLoader, device=None):
-        self.data_loader = data_loader
-        self.iter = iter(self.data_loader)
-        self.device = device
-
-    def __next__(self):
-        try:
-            data = next(self.iter)
-            if self.device is not None:
-                data = send_to_device(data, self.device)
-        except StopIteration:
-            self.iter = iter(self.data_loader)
-            data = next(self.iter)
-            if self.device is not None:
-                data = send_to_device(data, self.device)
-        return data
-
-    def __len__(self):
-        return len(self.data_loader)
-
-
-# def train_model(model,
-#                 dataset,
-#                 cfg,
-#                 distributed=False,
-#                 validate=False,
-#                 timestamp=None,
-#                 meta=None):
-#     """Train model function.
-#
-#     Args:
-#         model (nn.Module): The model to be trained.
-#         dataset (Dataset): Train dataset.
-#         cfg (dict): The config dict for training.
-#         distributed (bool): Whether to use distributed training.
-#             Default: False.
-#         validate (bool): Whether to do evaluation. Default: False.
-#         timestamp (str | None): Local time for runner. Default: None.
-#         meta (dict | None): Meta dict to record some important information.
-#             Default: None
-#     """
-#     logger = get_root_logger(cfg.log_level)
-#
-#     # prepare data loaders
-#     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
-#     # step 1: give default values and override (if exist) from cfg.data
-#     loader_cfg = {
-#         **dict(
-#             seed=cfg.get('seed'),
-#             drop_last=False,
-#             dist=distributed,
-#             num_gpus=len(cfg.gpu_ids)),
-#         **({} if torch.__version__ != 'parrots' else dict(
-#             prefetch_num=2,
-#             pin_memory=False,
-#         )),
-#         **dict((k, cfg.data[k]) for k in [
-#             'samples_per_gpu',
-#             'workers_per_gpu',
-#             'shuffle',
-#             'seed',
-#             'drop_last',
-#             'prefetch_num',
-#             'pin_memory',
-#             'persistent_workers',
-#         ] if k in cfg.data)
-#     }
-#
-#     # step 2: cfg.data.train_dataloader has highest priority
-#     train_loader_cfg = dict(loader_cfg, **cfg.data.get('train_dataloader', {}))
-#
-#     data_loaders = [build_dataloader(ds, **train_loader_cfg) for ds in dataset]
-#     data_loader = data_loaders[0]
-#     train_iter = ForeverDataIterator(data_loader)
-#
-#     # build optimizer
-#     optimizer = build_optimizers(model, cfg.optimizer)
-#     ic(optimizer)
-#
-#     # resume or load from pretrained a checkpoint
-#
-#     # switch to rain mode
-#     model.train()
-#     for i in range(3):
-#         a = next(train_iter)
-#         ic(a.keys())
-#         outputs = model.train_step(a, optimizer)
-#         ic(outputs['log_vars'])
 
 
 def train_model(model,
@@ -301,21 +185,21 @@ def train_model(model,
     optimizer = build_optimizers(model, cfg.optimizer)
     # optimizer=None
 
-    runner = EpochBasedRunner(
-        model,
-        optimizer=optimizer,
-        work_dir=cfg.work_dir,
-        logger=logger,
-        meta=meta)
-
-    # runner = IterBasedRunner(
+    # runner = EpochBasedRunner(
     #     model,
     #     optimizer=optimizer,
     #     work_dir=cfg.work_dir,
     #     logger=logger,
-    #     meta=meta
-    #
-    # )
+    #     meta=meta)
+
+    runner = IterBasedRunner(
+        model,
+        optimizer=optimizer,
+        work_dir=cfg.work_dir,
+        logger=logger,
+        meta=meta
+
+    )
 
     # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp
@@ -357,7 +241,6 @@ def train_model(model,
 
     # register eval hooks
     if validate:
-        ic(validate)
         eval_cfg = cfg.get('evaluation', {})
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         dataloader_setting = dict(
@@ -378,7 +261,7 @@ def train_model(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    runner.run(data_loaders, cfg.workflow, cfg.total_iters)
 
 
 def main(args):
@@ -499,6 +382,7 @@ def main(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    args.config = "../configs/mouse/try_adv_train.py"
+    # args.config = "../configs/mouse/try_adv_train.py"
+    args.config = "../configs/mouse/try_em_train.py"
     args.gpu_id = 0
     main(args)
