@@ -44,8 +44,8 @@ class TriangNet(BasePose):
         super().__init__()
         self.fp16_enabled = False
         self.backbone = builder.build_backbone(backbone)
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
+        self.train_cfg = {} if train_cfg is None else train_cfg
+        self.test_cfg = {} if test_cfg is None else test_cfg
 
         # init the keypoint_head
         if keypoint_head is not None:
@@ -165,6 +165,7 @@ class TriangNet(BasePose):
             heatmap = self.keypoint_head(hidden_features)
         if self.with_score_head:
             scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
+
         else:
             scores = torch.ones(*target.shape[:2], dtype=torch.float32, device=target.device)
         # ic(scores.shape)
@@ -218,6 +219,9 @@ class TriangNet(BasePose):
             scores = self.score_head(features)  # [bs*num_cams, num_joints]
         else:
             scores = torch.ones(*heatmap.shape[:2], dtype=torch.float32, device=img.device)
+
+        # clamp the scores into [0.2, 0.8]
+        scores = torch.clamp(scores, min=0.35, max=0.65)
 
         if self.test_cfg.get('flip_test', True):
             img_flipped = img.flip(3)

@@ -216,7 +216,8 @@ def main(args):
 if __name__ == '__main__':
     args = parse_args()
 
-    args.config = "../configs/exp_configs/Triangnet_dannce_to_1229_un3d_wo_scorehead_epoch.py"
+    # args.config = "../configs/exp_configs/Triangnet_dannce_to_1229_un3d_wo_scorehead_epoch.py"
+    args.config = "../configs/exp_configs/AdvTriangnet_dannce_to_1229_epoch.py"
     args.runner_type = "epoch_runner"
 
     main(args)

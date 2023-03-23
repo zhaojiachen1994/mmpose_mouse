@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from icecream import ic
 
 from mmpose.models.builder import build_loss
 from ..builder import HEADS
@@ -52,7 +53,9 @@ class TriangulateHead(nn.Module):
         [self.h_map, self.w_map] = heatmap_shape
         self.softmax = softmax_heatmap
         self.det_conf_thr = det_conf_thr  # weather use the 2d detect confidence to mask the fail detection points
-        if loss_3d_sup is not None and train_cfg.get('use_3d_sup'):
+        self.train_cfg = {} if train_cfg is None else train_cfg
+        self.test_cfg = {} if test_cfg is None else test_cfg
+        if loss_3d_sup is not None:  # and self.train_cfg.get('use_3d_sup')
             self.super_loss = build_loss(loss_3d_sup)
 
     def compute_kp_coords(self, heatmap):
@@ -165,6 +168,7 @@ class TriangulateHead(nn.Module):
         # if len(confidences.shape) == 2:
         confidences = confidences.view(batch_size, n_cams, *confidences.shape[1:])
         confidences = confidences / confidences.sum(dim=1, keepdim=True)  # [num_sample, num_cams, num_joints]
+        ic(confidences[0])
         confidences = confidences + 1e-5
 
         if self.det_conf_thr is not None:

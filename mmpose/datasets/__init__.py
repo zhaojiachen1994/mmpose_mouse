@@ -1,9 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .builder import DATASETS, PIPELINES, build_dataloader, build_dataset
 from .dataset_info import DatasetInfo
-from .pipelines import Compose
-from .samplers import DistributedSampler
-
 from .datasets import (  # isort:skip
     AnimalATRWDataset, AnimalFlyDataset, AnimalHorse10Dataset,
     AnimalLocustDataset, AnimalMacaqueDataset, AnimalPoseDataset,
@@ -21,7 +18,9 @@ from .datasets import (  # isort:skip
     TopDownOCHumanDataset, TopDownOneHand10KDataset, TopDownPanopticDataset,
     TopDownPoseTrack18Dataset, TopDownPoseTrack18VideoDataset,
     Body3DMviewDirectPanopticDataset, Body3DMviewDirectShelfDataset,
-    Body3DMviewDirectCampusDataset, NVGestureDataset)
+    Body3DMviewDirectCampusDataset, NVGestureDataset, MouseMars2dDataset)
+from .pipelines import Compose
+from .samplers import DistributedSampler
 
 __all__ = [
     'TopDownCocoDataset', 'BottomUpCocoDataset', 'BottomUpMhpDataset',
@@ -42,5 +41,5 @@ __all__ = [
     'TopDownPoseTrack18VideoDataset', 'build_dataloader', 'build_dataset',
     'Compose', 'DistributedSampler', 'DATASETS', 'PIPELINES', 'DatasetInfo',
     'Body3DMviewDirectPanopticDataset', 'Body3DMviewDirectShelfDataset',
-    'Body3DMviewDirectCampusDataset', 'NVGestureDataset'
+    'Body3DMviewDirectCampusDataset', 'NVGestureDataset', 'MouseMars2dDataset'
 ]
