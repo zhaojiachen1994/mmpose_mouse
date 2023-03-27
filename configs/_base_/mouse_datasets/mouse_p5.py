@@ -1,10 +1,10 @@
 dataset_info = dict(
-    dataset_name='mars_p5',
+    dataset_name='mouse_p5',
     paper_info=dict(
-        author='Cristina Segalin',
-        title='The Mouse Action Recognition System (MARS) software pipeline for automated analysis of social behaviors in mice',
-        container='eLife',
-        year='2021',
+        author='aa',
+        title='aa',
+        container='aa',
+        year='aa',
         homepage='',
     ),
     keypoint_info={

@@ -4,6 +4,7 @@
 import warnings
 
 import torch
+from icecream import ic
 
 from .base import BasePose
 from .. import builder
@@ -163,14 +164,15 @@ class TriangNet(BasePose):
         hidden_features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(hidden_features)
+            # conf_heatmap = torch.amax(heatmap, 2)/torch.sum(heatmap, 2)
+            # conf_heatmap = torch.unsqueeze(conf_heatmap, -1).detach()
         if self.with_score_head:
             scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
-
         else:
             scores = torch.ones(*target.shape[:2], dtype=torch.float32, device=target.device)
-        # ic(scores.shape)
+        ic(scores)
         if self.with_triangulate_head:
-            kpt_3d_pred, res_triang, kp_2d_croped, kp_2d_heatmap = \
+            kpt_3d_pred, res_triang, kp_2d_croped, _, _ = \
                 self.triangulate_head(heatmap, proj_mat, scores)
 
         # if return loss
@@ -211,7 +213,12 @@ class TriangNet(BasePose):
         result = {}
         features = self.backbone(img)
         if self.with_keypoint_head:
-            heatmap = self.keypoint_head(features)  # for triangulate-head input
+            heatmap = self.keypoint_head(features)  # for triangulate-head input, [bs*num_cams, num_channel, ]
+            # ic(heatmap.shape)
+            # conf_heatmap = torch.amax(heatmap, 1)/torch.sum(heatmap, 1)
+            # conf_heatmap = torch.unsqueeze(conf_heatmap, -1).detach()
+            # ic(conf_heatmap.shape)
+
             output_heatmap = self.keypoint_head.inference_model(
                 features, flip_pairs=None)
 
@@ -219,7 +226,6 @@ class TriangNet(BasePose):
             scores = self.score_head(features)  # [bs*num_cams, num_joints]
         else:
             scores = torch.ones(*heatmap.shape[:2], dtype=torch.float32, device=img.device)
-
         # clamp the scores into [0.2, 0.8]
         scores = torch.clamp(scores, min=0.35, max=0.65)
 
@@ -240,11 +246,13 @@ class TriangNet(BasePose):
             result['output_heatmap'] = output_heatmap
 
         if self.with_triangulate_head:
-            kp_3d, res_triang, kp_2d_preds, _ = self.triangulate_head(heatmap, proj_mat, scores)
+            kp_3d, res_triang, kp_2d_preds, reproject_kp_2d, _ = self.triangulate_head(heatmap, proj_mat, scores)
 
             result['preds'] = kp_3d.detach().cpu().numpy()
-            # result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()  # the detector 2d keypoint prediction
+            result['kp_2d_preds'] = kp_2d_preds.detach().cpu().numpy()  # the detector 2d keypoint prediction
             result['res_triang'] = res_triang.detach().cpu().numpy()
+            result[
+                'kp_2d_reproject'] = reproject_kp_2d.detach().cpu().numpy()  # the predicted 3d keypoint reproject 2d result
             result['scores'] = scores.detach().cpu().numpy()
 
         if img_metas is not None:

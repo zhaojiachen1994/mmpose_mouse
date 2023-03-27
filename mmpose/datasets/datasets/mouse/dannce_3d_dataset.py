@@ -10,12 +10,11 @@ import mmcv
 import numpy as np
 from icecream import ic
 from mmcv import Config
-from xtcocotools.coco import COCO
-from xtcocotools.cocoeval import COCOeval
-
 from mmpose.core.evaluation import keypoint_mpjpe
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.base import Kpt3dMviewRgbImgDirectDataset
+from xtcocotools.coco import COCO
+from xtcocotools.cocoeval import COCOeval
 
 
 @DATASETS.register_module()
@@ -218,7 +217,7 @@ class MouseDannce3dDataset(Kpt3dMviewRgbImgDirectDataset):
 
         return self.pipeline(results)
 
-    def evaluate(self, results, res_folder=None, metric='mAP', **kwargs):
+    def evaluate(self, results, res_folder=None, metric='mpjpe', **kwargs):
         metrics = metric if isinstance(metric, list) else [metric]
         for _metric in metrics:
             if _metric not in self.ALLOWED_METRICS:

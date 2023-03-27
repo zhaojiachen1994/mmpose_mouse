@@ -1,9 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from icecream import ic
-
 from mmpose.models.builder import build_loss
+
 from ..builder import HEADS
 
 
@@ -78,6 +77,8 @@ class TriangulateHead(nn.Module):
         else:
             heatmap = nn.functional.relu(heatmap)
         #     print("=============No==============")
+
+        # compute the heatmap confidence
         confidence = torch.amax(heatmap, 2) / torch.sum(heatmap, 2)
         confidence = torch.unsqueeze(confidence, -1)
 
@@ -168,12 +169,12 @@ class TriangulateHead(nn.Module):
         # if len(confidences.shape) == 2:
         confidences = confidences.view(batch_size, n_cams, *confidences.shape[1:])
         confidences = confidences / confidences.sum(dim=1, keepdim=True)  # [num_sample, num_cams, num_joints]
-        ic(confidences[0])
         confidences = confidences + 1e-5
-
+        # ic(kp_2d_croped)
         if self.det_conf_thr is not None:
             for batch_i in range(batch_size):
                 for joint_i in range(n_joints):
+
                     cams_detected = kp_2d_croped[batch_i, :, joint_i, 2] > self.det_conf_thr
                     cam_idx = torch.where(cams_detected)[0]
                     point = kp_2d_croped[batch_i, cam_idx, joint_i, :2]  # a joint in all views
@@ -190,7 +191,12 @@ class TriangulateHead(nn.Module):
                     confidence = confidences[batch_i, :, joint_i]
                     kp_3d[batch_i, joint_i], res_triang[batch_i, joint_i] = \
                         self.triangulate_point(proj_matrices[batch_i], points, confidence)
-        return kp_3d, res_triang, kp_2d_croped, kp_2d_heatmap
+        # kp3d detected
+        # kp_3d_detected = kp_3d[:, :, :, 0]
+
+        reproject_kp_2d = self.reproject(kp_3d, proj_matrices)
+
+        return kp_3d, res_triang, kp_2d_croped, reproject_kp_2d, kp_2d_heatmap
 
     def reproject(self, kp_3d, proj_matrices):
         """
@@ -198,7 +204,7 @@ class TriangulateHead(nn.Module):
             kp_3d: np.array, [bs, n_joints, 3]
             proj_matrices: [bs, num_cams, 3, 4]
         Returns:
-            pseudo_kp_2d: [bs, num_cams, num_joints, 2]
+            reproject_kp_2d: [bs, num_cams, num_joints, 2]
         """
         # if kp_3d.shape[-1] == 3:
         #     kp_3d_temp = np.concatenate([kp_3d, torch.ones([*kp_3d.shape[:-1], 1])], dim=-1)

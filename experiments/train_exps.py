@@ -12,7 +12,6 @@ from mmcv import Config, DictAction
 from mmcv.runner import (get_dist_info)
 from mmcv.runner import init_dist, set_random_seed
 from mmcv.utils import get_git_hash
-
 from mmpose import __version__
 from mmpose.apis import init_random_seed
 from mmpose.datasets import build_dataset
@@ -217,7 +216,10 @@ if __name__ == '__main__':
     args = parse_args()
 
     # args.config = "../configs/exp_configs/Triangnet_dannce_to_1229_un3d_wo_scorehead_epoch.py"
-    args.config = "../configs/exp_configs/AdvTriangnet_dannce_to_1229_epoch.py"
-    args.runner_type = "epoch_runner"
+    # args.config = "../configs/exp_configs/AdvTriangnet_dannce_to_1229_epoch.py"
 
+    """train mars to dannce unsupervised 3d loss with score head"""
+    args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p5_un3d_epoch.py"
+
+    args.runner_type = "epoch_runner"
     main(args)

@@ -6,11 +6,11 @@ import numpy as np
 from mmcv.image import imwrite
 from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
-
 from mmpose.core import imshow_bboxes, imshow_keypoints
+
+from .base import BasePose
 from .. import builder
 from ..builder import POSENETS
-from .base import BasePose
 
 try:
     from mmcv.runner import auto_fp16

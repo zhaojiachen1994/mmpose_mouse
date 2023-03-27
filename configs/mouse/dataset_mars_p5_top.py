@@ -146,7 +146,7 @@ val_pipeline = [
         keys=['img'],
         meta_keys=[
             'image_file', 'center', 'scale', 'rotation', 'bbox_score',
-            'flip_pairs'
+            'flip_pairs', 'bbox'
         ]),
 ]
 
@@ -155,10 +155,10 @@ test_pipeline = val_pipeline
 data_root = "D:/Datasets/MARS-PoseAnnotationData"
 
 data = dict(
-    samples_per_gpu=16,
+    samples_per_gpu=32,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=32),
-    test_dataloader=dict(samples_per_gpu=32),
+    val_dataloader=dict(samples_per_gpu=64),
+    test_dataloader=dict(samples_per_gpu=64),
     train=dict(
         type='MouseMars2dDataset',
         ann_file=f'{data_root}/MARS_keypoints_top_black.json',
