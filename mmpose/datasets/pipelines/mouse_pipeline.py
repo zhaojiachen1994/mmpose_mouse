@@ -24,11 +24,20 @@ class SquareBbox:
     return bbox by xyxy
 
     """
+    def __init__(self, format='xywh'):
+        self.format=format
+
     def __call__(self, results):
         bbox = results['bbox']
-        left, upper, width, height = bbox
-        right = left + width
-        lower = upper + height
+
+        if self.format == 'xyxy':    # the det model output
+            left, upper, right, lower = bbox
+            width = right - left
+            height = lower - upper
+        elif self.format == 'xywh':  # the dataset annotation format
+            left, upper, width, height = bbox
+            right = left + width
+            lower = upper + height
 
         if width > height:
             y_center = (upper + lower) // 2
@@ -60,8 +69,9 @@ class CropImage:
         Returns:
             cropped_image numpy array of shape (height, width, 3): resulting cropped image
     """
-    def __init__(self, update_camera=False):
+    def __init__(self, update_camera=False, update_gt=True):
         self.update_camera = update_camera
+        self.update_gt = update_gt
 
     def __call__(self, results):
         image_pil = Image.fromarray(results['img'])
@@ -72,10 +82,12 @@ class CropImage:
         left = results['bbox'][0]
         upper = results['bbox'][1]
 
-        joint_3d = results['joints_3d'] # 2d indeed
-        joint_3d[:, 0] = joint_3d[:, 0] - left
-        joint_3d[:, 1] = joint_3d[:, 1] - upper
-        results['joints_3d'] = joint_3d
+        if self.update_gt:
+            joint_3d = results['joints_3d'] # 2d indeed
+            joint_3d[:, 0] = joint_3d[:, 0] - left
+            joint_3d[:, 1] = joint_3d[:, 1] - upper
+            results['joints_3d'] = joint_3d
+
         results['bbox_offset'] = results['bbox'][:2]
 
         if self.update_camera:
@@ -95,8 +107,9 @@ class ResizeImage:
     """
     resize the croped box into input image size
     """
-    def __init__(self, update_camera=False):
+    def __init__(self, update_camera=False, update_gt=True):
         self.update_camera = update_camera
+        self.update_gt = update_gt
 
     def __call__(self, results):
         # ic(results['image_file'], results['cam_idx'], results['frame_idx'],results['camera']['K'] )
@@ -107,8 +120,11 @@ class ResizeImage:
         results['img'] = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
         # update the ground truth 2d keypoint coord
-        results['joints_3d'][:, 0] = results['joints_3d'][:, 0] * (new_width / width_old)
-        results['joints_3d'][:, 1] = results['joints_3d'][:, 1] * (new_width / width_old)
+        if self.update_gt:
+            results['joints_3d'][:, 0] = results['joints_3d'][:, 0] * (new_width / width_old)
+            results['joints_3d'][:, 1] = results['joints_3d'][:, 1] * (new_width / width_old)
+
+
         # save the resize ratio
         results['resize_ratio'] = new_width / width_old
 

@@ -4,7 +4,8 @@ from icecream import ic
 from mmpose.apis import init_pose_model
 from mmpose.datasets import build_dataloader, build_dataset
 
-if __name__ == "__main__":
+
+def try_3d():
     # data_root = "D:/Datasets/h36m_dataset/human3.6m_parse"
     # ann_file = f"{data_root}/annotations/Human36M_subject1_joint_2d.json"
     # cam_file = f"{data_root}/annotations/Human36M_subject1_camera.json"
@@ -64,3 +65,14 @@ if __name__ == "__main__":
                                         )
 
     ic(evaluate_results)
+
+
+if __name__ == "__main__":
+    config_file = "/configs/human/hrnet_w48_h36m_p16_256x256.py"
+    config = mmcv.Config.fromfile(config_file)
+    dataset = build_dataset(config.data.train)
+    dataloader = build_dataloader(dataset, samples_per_gpu=3, workers_per_gpu=2)
+    _, a = next(enumerate(dataloader))
+    ic(a.keys())
+    ic(a['img'].shape)
+    ic(len(a['img_metas'].data[0]))

@@ -19,7 +19,7 @@ Models:
       PCK: 0.911
     Task: Body 2D Keypoint
   Weights: https://download.openmmlab.com/mmpose/top_down/hrnet/hrnet_w32_h36m_256x256-d3206675_20210621.pth
-- Config: configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/h36m/hrnet_w48_h36m_256x256.py
+- Config: configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/h36m/hrnet_w48_h36m_p16_256x256.py
   In Collection: HRNet
   Metadata:
     Architecture: *id001

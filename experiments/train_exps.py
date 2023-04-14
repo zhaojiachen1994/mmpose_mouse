@@ -12,6 +12,7 @@ from mmcv import Config, DictAction
 from mmcv.runner import (get_dist_info)
 from mmcv.runner import init_dist, set_random_seed
 from mmcv.utils import get_git_hash
+
 from mmpose import __version__
 from mmpose.apis import init_random_seed
 from mmpose.datasets import build_dataset
@@ -32,7 +33,7 @@ except ImportError:
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a pose model')
     parser.add_argument('--config', help='train config file path')
-    parser.add_argument('--work-dir', default='', help='the dir to save logs and models')
+    parser.add_argument('--work-dir', default=None, help='the dir to save logs and models')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument('--runner-type', default='epoch_runner', help='train model with epoch_runner or iter_runner')
@@ -219,7 +220,32 @@ if __name__ == '__main__':
     # args.config = "../configs/exp_configs/AdvTriangnet_dannce_to_1229_epoch.py"
 
     """train mars to dannce unsupervised 3d loss with score head"""
-    args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p5_un3d_epoch.py"
+    # args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p5_un3d_epoch.py"
 
+    # args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p9_un3d_epoch.py"
+
+    # args.config = "../configs/exp_configs/AdvTriangnet_mars_to_dannce_p9_epoch.py"
+
+    # args.config = "../configs/exp_configs/CDTriangnet_mars_to_dannce_p9.py"
+
+    # args.config = "../configs/mouse/DATriangNet_mars_to_dannce.py"
+
+    """dannce to 1229"""
+    # args.config = "../configs/exp_configs/mouse/train_dannce2thmouse_hrnet_score_p12.py"
+
+    # args.config = "../configs/exp_configs/mouse/train_dannce2thmouse_hrnet_score_dd_p12.py"
+
+    """1229 to dannce"""
+    args.config = "../configs/exp_configs/mouse/train_thmouse2dannce_hrnet_score_p12.py"
+
+    """distribution triangulate method dannce to 1229"""
+    # args.config = "../configs/exp_configs/DT_dannce_to_1229_p12.py"
+
+
+    # args.config = "../configs/exp_configs/human/CDTriang_train_hpii_to_h36m_sub5.py"
+
+    # args.config = "../configs/exp_configs/human/DATriang_train_hpii_to_h36m_sub1.py"
+    # args.config = "../configs/exp_configs/human/SemiTriang_train_01_h36m_sub1.py"
     args.runner_type = "epoch_runner"
     main(args)
+

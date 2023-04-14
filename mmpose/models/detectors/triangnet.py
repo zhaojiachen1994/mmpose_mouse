@@ -4,7 +4,6 @@
 import warnings
 
 import torch
-from icecream import ic
 
 from .base import BasePose
 from .. import builder
@@ -170,7 +169,7 @@ class TriangNet(BasePose):
             scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
         else:
             scores = torch.ones(*target.shape[:2], dtype=torch.float32, device=target.device)
-        ic(scores)
+        # ic(scores)
         if self.with_triangulate_head:
             kpt_3d_pred, res_triang, kp_2d_croped, _, _ = \
                 self.triangulate_head(heatmap, proj_mat, scores)

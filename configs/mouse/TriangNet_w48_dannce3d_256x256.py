@@ -67,9 +67,9 @@ model = dict(
         img_shape=[256, 256],
         heatmap_shape=[64, 64],
         softmax_heatmap=True,
-        loss_3d_super=dict(type='MSELoss',
-                           use_target_weight=True,
-                           loss_weight=1.),
+        # loss_3d_super=dict(type='MSELoss',
+        #                    use_target_weight=True,
+        #                    loss_weight=1.),
         train_cfg=train_cfg,
     ),
     test_cfg=dict(
@@ -143,7 +143,7 @@ data = dict(
     test_dataloader=dict(samples_per_gpu=4),
     train=dict(
         type='MouseDannce3dDataset',
-        ann_file=f'{data_root}/annotations_visible_train930_new.json',
+        ann_file=f'{data_root}/annotations_visible_train930_new2.json',
         ann_3d_file=f'{data_root}/joints_3d.json',
         cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',
@@ -153,7 +153,7 @@ data = dict(
 
     eval=dict(
         type='MouseDannce2dDatasetSview',
-        ann_file=f'{data_root}/annotations_visible_eval930_new.json',
+        ann_file=f'{data_root}/annotations_visible_eval930_new2.json',
         ann_3d_file=f'{data_root}/joints_3d.json',
         cam_file=f'{data_root}/cams.pkl',
         img_prefix=f'{data_root}/images_gray/',

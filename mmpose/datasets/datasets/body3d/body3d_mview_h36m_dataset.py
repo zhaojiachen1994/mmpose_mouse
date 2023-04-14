@@ -55,17 +55,18 @@ class Body3DH36MMviewDataset(Kpt3dMviewRgbImgDirectDataset):
         self.coco = COCO(ann_file)
         self.img_ids = self.coco.getImgIds()
         self.num_images = len(self.img_ids)
+        self.data_cfg = data_cfg
 
         self.id2name, self.name2id = self._get_mapping_id_name(
             self.coco.imgs)
-        self.db = self._get_db()
+        self.db = self._get_db(data_cfg)
         self.cams_params = self._get_cam_params(cam_file)
         self.joints_global = self._get_joints_3d(ann_3d_file)
 
     def __len__(self):
         return int(self.num_images / 4)
 
-    def _get_db(self):
+    def _get_db(self, data_cfg):
         """get the database"""
         gt_db = []
         for img_id in self.img_ids:
@@ -90,8 +91,8 @@ class Body3DH36MMviewDataset(Kpt3dMviewRgbImgDirectDataset):
             joints_3d = np.zeros((num_joints, 3), dtype=np.float32)
             joints_3d_visible = np.zeros((num_joints, 3), dtype=np.float32)
             keypoints = np.array(obj['keypoints']).reshape(-1, 3)
-            joints_3d[:, :2] = keypoints[:, :2]
-            joints_3d_visible[:, :2] = np.minimum(1, keypoints[:, 2:3])
+            joints_3d[:, :2] = keypoints[data_cfg['dataset_channel'], :2]
+            joints_3d_visible[:, :2] = np.minimum(1, keypoints[data_cfg['dataset_channel'], 2:3])
             image_file = osp.join(self.img_prefix, self.id2name[img_id])
 
             rec = {
@@ -153,7 +154,8 @@ class Body3DH36MMviewDataset(Kpt3dMviewRgbImgDirectDataset):
             # get the global 3d joint
             result['joints_4d'] = \
                 np.array(self.joints_global[str(result['action_idx'])][str(result['subaction_idx'])][
-                             str(result['frame_idx'])])
+                             str(result['frame_idx'])])[self.data_cfg['dataset_channel']]
+            result['joints_4d_visible'] = np.ones(self.data_cfg['num_joints'])
             results[c] = result
 
         return self.pipeline(results)
@@ -190,10 +192,12 @@ class Body3DH36MMviewDataset(Kpt3dMviewRgbImgDirectDataset):
             for i in range(batch_size):  # result in a batch
                 kpts.append({
                     'keypoints': preds[i],
-                    'subject': img_metas[i]['subject'],
-                    'action_idx': img_metas[i]['action_idx'],
-                    'subaction_idx': img_metas[i]['subaction_idx'],
-                    'frame_idx': img_metas[i]['frame_idx'],
+                    'joints_4d': img_metas[i]['joints_4d'],
+                    'joints_4d_visible': img_metas[i]['joints_4d_visible'],
+                    # 'subject': img_metas[i]['subject'],
+                    # 'action_idx': img_metas[i]['action_idx'],
+                    # 'subaction_idx': img_metas[i]['subaction_idx'],
+                    # 'frame_idx': img_metas[i]['frame_idx'],
                 })
         mmcv.dump(kpts, res_file)
 
@@ -235,12 +239,13 @@ class Body3DH36MMviewDataset(Kpt3dMviewRgbImgDirectDataset):
         masks = []
         for idx, result in enumerate(keypoint_results):
             pred = result['keypoints']
-
-            gt = self.get_gt_global(result['subject'],
-                                    result['action_idx'],
-                                    result['subaction_idx'],
-                                    result['frame_idx'])
-            mask = np.ones(pred.shape[0]) > 0
+            gt = result['joints_4d']
+            mask = result['joints_4d_visible'] > 0
+            # gt = self.get_gt_global(result['subject'],
+            #                         result['action_idx'],
+            #                         result['subaction_idx'],
+            #                         result['frame_idx'])
+            # mask = np.ones(pred.shape[0]) > 0
             gts.append(gt)
             preds.append(pred)
             masks.append(mask)

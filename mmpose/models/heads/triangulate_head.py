@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmpose.models.builder import build_loss
 
+from mmpose.models.builder import build_loss
 from ..builder import HEADS
 
 
@@ -128,19 +128,18 @@ class TriangulateHead(nn.Module):
         if confidences is None:
             confidences = torch.ones(n_views, dtype=torch.float32, device=points.device)
 
-
         A = proj_matrices[:, 2:3].expand(n_views, 2, 4) * points.view(n_views, 2, 1)
         A -= proj_matrices[:, :2]
         A *= confidences.view(-1, 1, 1)
 
         u, s, vh = torch.svd(A.view(-1, 4))
-
+        # ic(s)
         point_3d_homo = -vh[:, 3]
         point_3d = homogeneous_to_euclidean(point_3d_homo.unsqueeze(0))[0]
-
+        # ic(point_3d)
         # compute triangulation residual
-        res_triang = torch.linalg.vector_norm(A @ point_3d_homo.unsqueeze(1), ord=1)
-
+        # res_triang = torch.linalg.vector_norm(A @ point_3d_homo.unsqueeze(1), ord=1)
+        res_triang = s[-1]
         return point_3d, res_triang
 
     def forward(self, heatmap, proj_matrices=None, confidences=None):
@@ -154,6 +153,9 @@ class TriangulateHead(nn.Module):
             kp_3d: triangulation results, keypoint 3d coordinates, [bs, n_joints, 3]
             res_triang: triangulation residual, [bs, n_joints]
         """
+        # ic(heatmap.shape)
+
+
         kp_2d_heatmap, kp_2d_croped = self.compute_kp_coords(
             heatmap)  # [bs*num_cams, num_joints, 3] with [x, y, confidence]
         kp_2d_croped = kp_2d_croped.reshape(
@@ -174,7 +176,6 @@ class TriangulateHead(nn.Module):
         if self.det_conf_thr is not None:
             for batch_i in range(batch_size):
                 for joint_i in range(n_joints):
-
                     cams_detected = kp_2d_croped[batch_i, :, joint_i, 2] > self.det_conf_thr
                     cam_idx = torch.where(cams_detected)[0]
                     point = kp_2d_croped[batch_i, cam_idx, joint_i, :2]  # a joint in all views

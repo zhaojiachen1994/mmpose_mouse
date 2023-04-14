@@ -150,6 +150,9 @@ class Mouse12293dDatasetMview(Kpt3dMviewRgbImgDirectDataset):
             result['joints_4d'] = self.joints_4d[idx]
             result['joints_4d_visible'] = self.joints_4d_visible[idx]
             results[c] = result
+        # ic(results.keys())
+        # ic(results[0].keys())
+        # ic(results[0]['bbox'])
         return self.pipeline(results)
 
     def evaluate(self, results, res_folder=None, metric='mpjpe', **kwargs):

@@ -126,13 +126,13 @@ def reorder_annotations():
     # ic(len(anno_data['images']))
     # ic(anno_data['annotations'][0])
 
-    actions_ids = [f"{i:02d}" for i in range(2, 17)]
+    actions_ids = [f"{i:02d}" for i in range(2, 16)]    # subject11 only works for (2, 16)
     subact_ids = [f"{i:02d}" for i in range(1, 3)]
     cams = [f"{i:02d}" for i in range(1, 5)]
 
     id = 0
 
-    for subject in [1, 5, 6, 7, 8, 9, 11]:
+    for subject in [11]:
         # doesn't work for subject 11
         annotations = {}
         annotations['images'] = []
@@ -141,7 +141,11 @@ def reorder_annotations():
         anno_file = f"{data_root}/annotations/Human36M_subject{subject}_joint_2d.json"
         with open(anno_file, 'r') as f:
             orginal_anno_data = json.load(f)
-            global_id_start = anno_data['images'][0]['id']  # the start id of this subject in all dataset
+            ic(orginal_anno_data.keys())
+            ic(len(orginal_anno_data['images']))
+            ic(len(orginal_anno_data['annotations']))
+
+            # global_id_start = orginal_anno_data['images'][0]['id']  # the start id of this subject in all dataset
         for action_id in actions_ids:
             for subact_id in subact_ids:
                 image_folder = \
@@ -153,22 +157,103 @@ def reorder_annotations():
                     for i_cam, cam in enumerate(cams):
                         orginal_index = video_start + num_frames * i_cam + i_frame
                         img_one = orginal_anno_data['images'][orginal_index]
-                        img_one['id'] = id
-                        annotations['images'].append(img_one)
-                        anno_one = orginal_anno_data['annotations'][orginal_index]
-                        anno_one['id'] = id
-                        anno_one['image_id'] = id
-                        annotations['annotations'].append(anno_one)
-                        id = id + 1
-                video_start = video_start + num_frames * 4
-        new_anno_file = f"{data_root}/annotations/Human36M_subject{subject}_data_reorder.json"
-        with open(new_anno_file, "w") as f:
-            json.dump(annotations, f)
+        #                 img_one['id'] = id
+        #                 annotations['images'].append(img_one)
+        #                 anno_one = orginal_anno_data['annotations'][orginal_index]
+        #                 anno_one['id'] = id
+        #                 anno_one['image_id'] = id
+        #                 annotations['annotations'].append(anno_one)
+        #                 id = id + 1
+        #         video_start = video_start + num_frames * 4
+        #         ic(action_id, subact_id, i_frame, i_cam)
+        # new_anno_file = f"{data_root}/annotations/Human36M_subject{subject}_data_reorder.json"
+        # with open(new_anno_file, "w") as f:
+        #     json.dump(annotations, f)
 
 
 def downsample_h36m():
-    subject = 1
+
+    suffix = "_01"
+    if suffix == "":
+        ss = 4*10
+    elif suffix == "_0001":
+        ss = 4*10000        # 0.001 to train
+    elif suffix == "_001":   # 0.01 to train
+        ss = 4*1000
+    elif suffix == "_002":   # 0.02 to train
+        ss = 4*500
+    elif suffix == "_005":   # 0.05 to train
+        ss = 4*200
+    elif suffix == "_01":   # 0.05 to train
+        ss = 4*100
+
+
+
+    for person in [1,5,6,7,8,9]:
+        with open(f"D:/Datasets/h36m_dataset/human3.6m_parse/annotations_old/Human36M_subject{person}_data_reorder.json", 'r',
+                  encoding='UTF-8') as f:
+            load_dict = json.load(f)
+            ic(load_dict.keys())
+            new_dict = {}
+            assert len(load_dict['images']) == len(load_dict['annotations'])
+            new_dict['images'] = []
+            new_dict['annotations'] = []
+            print(len(load_dict['images']))
+            for i in range(0, len(load_dict['images']) - 4, ss):
+                # base down: 200 for 1/50, 1hz; 2000 for 1/500, 10% supervised, 1000 for 
+                new_dict['images'].append(load_dict['images'][i])
+                assert load_dict['images'][i]['cam_idx'] == 1
+                new_dict['images'].append(load_dict['images'][i + 1])
+                assert load_dict['images'][i + 1]['cam_idx'] == 2
+                new_dict['images'].append(load_dict['images'][i + 2])
+                assert load_dict['images'][i + 2]['cam_idx'] == 3
+                new_dict['images'].append(load_dict['images'][i + 3])
+                assert load_dict['images'][i + 3]['cam_idx'] == 4
+                assert load_dict['images'][i]['frame_idx'] == load_dict['images'][i + 3]['frame_idx']
+                new_dict['annotations'].append(load_dict['annotations'][i])
+                new_dict['annotations'].append(load_dict['annotations'][i + 1])
+                new_dict['annotations'].append(load_dict['annotations'][i + 2])
+                new_dict['annotations'].append(load_dict['annotations'][i + 3])
+            ic(new_dict.keys())
+            ic(len(new_dict['annotations']))
+            ic(len(new_dict['images']))
+            f.close()
+
+        for i in range(len(new_dict['images'])):
+            new_dict['images'][i]['id'] = i
+            new_dict['annotations'][i]['id'] = i
+            new_dict['annotations'][i]['image_id'] = i
+
+        with open(f"D:/Datasets/h36m_dataset/human3.6m_parse/annotations/Human36M_subject{person}_data{suffix}.json",
+                  'w', encoding='UTF-8') as g:
+            json.dump(new_dict, g)
+
+
+def combine_multi_subjects():
+    root = "D:/Datasets/h36m_dataset/human3.6m_parse/annotations"
+    suffix = "01"
+    total_anno = {'images':[], 'annotations':[]}
+    subjects = "156"
+    # subjects = "789"
+    for i in subjects:
+        file = f"{root}/Human36M_subject{i}_data_{suffix}.json"
+        with open(file, 'r') as f:
+            anno_i = json.load(f)
+            total_anno['images'].extend(anno_i['images'])
+            total_anno['annotations'].extend(anno_i['annotations'])
+    ic(total_anno.keys())
+    ic(len(total_anno['images']))
+    for i in range(len(total_anno['images'])):
+        total_anno['images'][i]['id'] = i
+        total_anno['annotations'][i]['id'] = i
+        total_anno['annotations'][i]['image_id'] = i
+    total_anno = json.dumps(total_anno, indent=0)
+    total_anno_file = f"{root}/Human36M_subjects_{subjects}_{suffix}.json"
+    with open(total_anno_file, "w") as f:
+        f.write(total_anno)
 
 
 if __name__ == "__main__":
-    reorder_annotations()
+    # reorder_annotations()
+    downsample_h36m()
+    combine_multi_subjects()

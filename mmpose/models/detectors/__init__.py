@@ -16,6 +16,8 @@ from .top_down import TopDown
 from .top_down_mview import TopDownMview
 from .triangnet import TriangNet
 from .triangnet_adv import AdvTriangNet
+from .triangnet_cd import CDTriangNet
+from .triangnet_da import DATriangNet
 from .triangnet_em import EmTriangNet
 
 __all__ = [
@@ -23,5 +25,7 @@ __all__ = [
     'PoseLifter', 'Interhand3D', 'PoseWarper', 'DetectAndRegress',
     'VoxelCenterDetector', 'VoxelSinglePose', 'GestureRecognizer',
     'DisentangledKeypointRegressor',
-    'MouseNet_3d', 'MouseNet_2d', 'TriangNet', 'TopDownMview', 'EmTriangNet', 'AdvTriangNet'
+    'MouseNet_3d', 'MouseNet_2d',
+    'TriangNet', 'TopDownMview', 'EmTriangNet', 'AdvTriangNet', 'CDTriangNet',
+    'DATriangNet'
 ]

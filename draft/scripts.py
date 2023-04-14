@@ -22,3 +22,14 @@
 
 """train 2d detector on concated mars p9 dataset"""
 # python tools/train.py "configs/mouse/hrnet_w48_mars_p9_256x256.py" --gpu-id 0
+
+"""train 2d detector on dannce p9 dataset"""
+# python tools/train.py "configs/mouse/hrnet_w48_dannce_p9_256x256.py" --gpu-id 0
+
+
+"""train 2d detector on human36m 2d p_16"""
+# python tools/train.py "configs/human/hrnet_w48_h36m_p16_256x256.py" --gpu-id 0
+
+# python tools/train.py "configs/human/hrnet_w48_mpii_256x256.py" --gpu-id 0
+
+python tools/train.py "configs/human/hrnet_w48_h36m_001_p16_256x256.py" --gpu-id 0

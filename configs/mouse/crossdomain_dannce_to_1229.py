@@ -59,7 +59,7 @@ target_pipeline = [
     ),
     dict(
         type="Collect",
-        keys=['img', 'target', 'target_weight', 'joints_4d', 'proj_mat', 'joints_3d'],
+        keys=['img', 'target', 'target_weight', 'joints_4d', 'joints_4d_visible', 'proj_mat', 'joints_3d'],
         meta_keys=['image_file', 'bbox_offset', 'resize_ratio']
     )
 ]
@@ -92,6 +92,5 @@ data = dict(
             data_cfg={{_base_.mouse1229_data_cfg}},
             pipeline=target_pipeline,
             dataset_info={{_base_.mouse1229_dataset_info}})
-
     ),
 )

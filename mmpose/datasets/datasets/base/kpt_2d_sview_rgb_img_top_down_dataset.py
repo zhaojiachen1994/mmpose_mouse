@@ -5,7 +5,6 @@ from abc import ABCMeta, abstractmethod
 
 import json_tricks as json
 import numpy as np
-from icecream import ic
 from torch.utils.data import Dataset
 from xtcocotools.coco import COCO
 
@@ -228,7 +227,6 @@ class Kpt2dSviewRgbImgTopDownDataset(Dataset, metaclass=ABCMeta):
         threshold_head_box = []
 
         for pred, item in zip(preds, self.db):
-            ic(preds, self.db)
             outputs.append(np.array(pred['keypoints'])[:, :-1])
             gts.append(np.array(item['joints_3d'])[:, :-1])
             masks.append((np.array(item['joints_3d_visible'])[:, 0]) > 0)

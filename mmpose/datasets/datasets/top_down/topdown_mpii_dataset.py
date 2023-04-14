@@ -8,8 +8,8 @@ import numpy as np
 from mmcv import Config, deprecated_api_warning
 from scipy.io import loadmat, savemat
 
-from ...builder import DATASETS
 from ..base import Kpt2dSviewRgbImgTopDownDataset
+from ...builder import DATASETS
 
 
 @DATASETS.register_module()
@@ -77,15 +77,15 @@ class TopDownMpiiDataset(Kpt2dSviewRgbImgTopDownDataset):
             dataset_info=dataset_info,
             coco_style=False,
             test_mode=test_mode)
-
-        self.db = self._get_db()
+        self.data_cfg = data_cfg
+        self.db = self._get_db(data_cfg)
         self.image_set = set(x['image_file'] for x in self.db)
         self.num_images = len(self.image_set)
 
         print(f'=> num_images: {self.num_images}')
         print(f'=> load {len(self.db)} samples')
 
-    def _get_db(self):
+    def _get_db(self, data_cfg):
         # create train/val split
         with open(self.ann_file) as anno_file:
             anno = json.load(anno_file)
@@ -117,8 +117,8 @@ class TopDownMpiiDataset(Kpt2dSviewRgbImgTopDownDataset):
                     f'joint num diff: {len(joints)}' + \
                     f' vs {self.ann_info["num_joints"]}'
 
-                joints_3d[:, 0:2] = joints[:, 0:2] - 1
-                joints_3d_visible[:, :2] = joints_vis[:, None]
+                joints_3d[:, 0:2] = joints[data_cfg['dataset_channel'], 0:2] - 1
+                joints_3d_visible[:, :2] = joints_vis[data_cfg['dataset_channel'], None]
             image_file = osp.join(self.img_prefix, image_name)
             gt_db.append({
                 'image_file': image_file,

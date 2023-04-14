@@ -14,3 +14,5 @@ if __name__ == "__main__":
     a = dataset.__getitem__(i)
     ic(a['source_data'].keys())
     ic(a['target_data'].keys())
+    ic(a['source_data']['img'].shape)
+    ic(a['target_data']['img'].shape)

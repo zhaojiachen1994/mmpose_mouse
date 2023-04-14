@@ -1,7 +1,6 @@
 import warnings
 
 import torch
-from icecream import ic
 
 from .triangnet import TriangNet
 from ..builder import POSENETS
@@ -33,8 +32,8 @@ class AdvTriangNet(TriangNet):
                  test_cfg=None,
                  pretrained=None):
         super().__init__(backbone, keypoint_head, triangulate_head, score_head, train_cfg, test_cfg, pretrained)
-        self.score_steps = 1  # the iter steps to update the score_head
-        self.heatmap_steps = 1  # the iter steps to optimize the backbone and heatmap
+        self.score_steps = 3  # the iter steps to update the score_head
+        self.heatmap_steps = 3  # the iter steps to optimize the backbone and heatmap
 
     def forward_train(self, img, proj_mat, img_metas, target,
                       target_weight, joints_4d, joints_4d_visible, train_state=None, **kwargs):
@@ -52,22 +51,21 @@ class AdvTriangNet(TriangNet):
         scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
 
         # clamp the scores into [0.2, 0.8]
-        ic("before clamp", scores.view(-1, 6, 12)[0])
+        # ic("before clamp", scores.view(-1, 6, 12)[0])
         scores = torch.clamp(scores, min=0.35, max=0.65)
-        ic(scores.view(-1, 6, 12)[0])
+        # ic(scores.view(-1, 6, 12)[0])
 
         losses = dict()
         if train_state == "update_score":
-            kpt_3d_pred, res_triang, _, _ = self.triangulate_head(heatmap, proj_mat, scores)
+            kpt_3d_pred, res_triang, kp_2d_croped, _, _ = self.triangulate_head(heatmap, proj_mat, scores)
 
             unsup_3d_loss = self.triangulate_head.get_unSup_loss(res_triang)
             # ic(scores)
             losses.update(unsup_3d_loss)
         elif train_state == "update_backbone":
             adv_scores = 1 - scores.detach()
-            # scores = torch.ones(*heatmap.shape[:2], dtype=torch.float32, device=img.device)
-            ic(adv_scores.view(-1, 6, 12)[0])
-            kpt_3d_pred, res_triang, _, _ = self.triangulate_head(heatmap, proj_mat, confidences=adv_scores)
+            # adv_scores = torch.ones(*heatmap.shape[:2], dtype=torch.float32, device=img.device)
+            kpt_3d_pred, res_triang, kp_2d_croped, _, _ = self.triangulate_head(heatmap, proj_mat, confidences=adv_scores)
             # ic("preds:", kpt_3d_pred[0])
             # ic(scores)
             sup_3d_loss = self.triangulate_head.get_sup_loss(kpt_3d_pred, joints_4d, joints_4d_visible)
@@ -80,7 +78,7 @@ class AdvTriangNet(TriangNet):
         # step1: update score_head
         set_requires_grad(self.score_head, True)
         set_requires_grad(self.keypoint_head, False)
-        set_requires_grad(self.backbone, False)
+        set_requires_grad(self.backbone, True)
         train_state = "update_score"
         for _ in range(self.score_steps):
             optimizer['score_head'].zero_grad()
@@ -115,10 +113,10 @@ class AdvTriangNet(TriangNet):
             loss2.backward()
             optimizer['keypoint_head'].step()
             optimizer['backbone'].step()
-        # ic(log_vars)
         total_log_vars.update(log_vars)
+        # total_log_vars = log_vars
         outputs = dict(
-            loss=loss,
+            loss=loss2,
             log_vars=total_log_vars,
             num_samples=len(next(iter(data_batch.values()))))
         return outputs

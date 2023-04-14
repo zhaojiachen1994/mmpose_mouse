@@ -99,7 +99,7 @@ def _expand_box(box, ratio=0.2, W=1600, H=1600):  # 将以关键点为边界的b
     return [x1, y1, w_new, h_new]
 
 
-def dlc2coco(folder, cam, joint_name, skeleton):  # 将dlc转换为coco格式
+def dlc2coco(folder, cam, joint_name, skeleton, image_start=0):  # 将dlc转换为coco格式
     # file = "C:/Users/wolf/Desktop/mouse/change/transfermouse/datasets/mouse1229/20221229-1-cam0/"
     h5file = f"{folder}/CollectedData_cyd.h5"
     df = pd.read_hdf(h5file)
@@ -119,6 +119,7 @@ def dlc2coco(folder, cam, joint_name, skeleton):  # 将dlc转换为coco格式
     vs = np.array([0 if np.isnan(keypoints[i, 0]) else 2 for i in range(len(keypoints))]).reshape([-1, 1])
     keypoints = np.concatenate([keypoints, vs], axis=1)
     keypoints = keypoints.reshape([num_images, -1])
+    ic(keypoints.shape)
     np.nan_to_num(keypoints, nan=0.0)
 
     total_anno = {"annotations": [],
@@ -129,8 +130,8 @@ def dlc2coco(folder, cam, joint_name, skeleton):  # 将dlc转换为coco格式
         key_list, vis_num, box = _keypoints_to_coco(keypoints[i])
         bbox = _expand_box(box)
         total_anno['annotations'].append({})
-        total_anno['annotations'][i]["image_id"] = i
-        total_anno['annotations'][i]["id"] = i
+        total_anno['annotations'][i]["image_id"] = i+image_start
+        total_anno['annotations'][i]["id"] = i+image_start
         total_anno['annotations'][i]["category_id"] = 1
         total_anno['annotations'][i]["bbox"] = bbox
         total_anno['annotations'][i]["area"] = bbox[2] * bbox[3]
@@ -140,7 +141,7 @@ def dlc2coco(folder, cam, joint_name, skeleton):  # 将dlc转换为coco格式
         total_anno['annotations'][i]["iscrowd"] = 0
         total_anno['images'].append({})
         total_anno['images'][i]["file_name"] = f"20221229-1-cam{cam}/{name[i + 2]}"
-        total_anno['images'][i]["id"] = i
+        total_anno['images'][i]["id"] = i+image_start
         total_anno['images'][i]["height"] = 1600
         total_anno['images'][i]["width"] = 1600
 
@@ -171,7 +172,7 @@ def change_imagename_json(path):
             f.write(anno)
 
 
-def combine_json_multi_cams(path, cams, num_image=99):
+def combine_json_multi_cams(path, cams, num_image=199):
     anno_dict = {}
     for i in cams:
         file = f"{path}/anno_20221229-1-cam{i}.json"
@@ -226,73 +227,104 @@ def scale_joint_3d():
 
 if __name__ == "__main__":
     # scale_cam_T()
-    scale_joint_3d()
+    # scale_joint_3d()
 
-    # joint_name = [
-    #     'left_ear_tip', 'right_ear_tip', 'nose', 'neck', 'body_middle',
-    #     'tail_root', 'tail_middle', 'tail_end',
-    #     'left_paw', 'left_shoulder',
-    #     'right_paw', 'right_shoulder',
-    #     'left_foot', 'left_hip',
-    #     'right_foot', 'right_hip']
-    # skeleton_name = [
-    #     ['left_ear_tip', 'nose'],
-    #     ['right_ear_tip', 'nose'],
-    #     ['nose', 'neck'],
-    #     ['neck', 'body_middle'],
-    #     ['body_middle', 'tail_root'],
-    #     ['tail_root', 'tail_middle'],
-    #     ['tail_middle', 'tail_end'],
-    #     ['neck', 'left_shoulder'],
-    #     ['left_shoulder', 'left_paw'],
-    #     ['neck', 'right_shoulder'],
-    #     ['right_shoulder', 'right_paw'],
-    #     ['body_middle', 'left_hip'],
-    #     ['left_hip', 'left_foot'],
-    #     ['body_middle', 'right_hip'],
-    #     ['right_hip', 'right_foot']
-    # ]
-    # skeleton = get_links(joint_name, skeleton_name)
-    # path = "D:/Datasets/transfer_mouse/onemouse1229"
+    joint_name = [
+        'left_ear_tip', 'right_ear_tip', 'nose', 'neck', 'body_middle',
+        'tail_root', 'tail_middle', 'tail_end',
+        'left_paw', 'left_shoulder',
+        'right_paw', 'right_shoulder',
+        'left_foot', 'left_hip',
+        'right_foot', 'right_hip']
+    skeleton_name = [
+        ['left_ear_tip', 'nose'],
+        ['right_ear_tip', 'nose'],
+        ['nose', 'neck'],
+        ['neck', 'body_middle'],
+        ['body_middle', 'tail_root'],
+        ['tail_root', 'tail_middle'],
+        ['tail_middle', 'tail_end'],
+        ['neck', 'left_shoulder'],
+        ['left_shoulder', 'left_paw'],
+        ['neck', 'right_shoulder'],
+        ['right_shoulder', 'right_paw'],
+        ['body_middle', 'left_hip'],
+        ['left_hip', 'left_foot'],
+        ['body_middle', 'right_hip'],
+        ['right_hip', 'right_foot']
+    ]
+    skeleton = get_links(joint_name, skeleton_name)
+    path = "D:/Datasets/transfer_mouse/onemouse1229"
 
-    # refolder the image files
-    # rename_images(path)
+
 
     # create json files
     # for i in [0, 1, 2, 3, 4, 5]:
     #     total_anno = dlc2coco(f"{path}/20221229-1-cam{i}", i, joint_name, skeleton)
+    #     ic(total_anno.keys())
     #     total_anno = json.dumps(total_anno, indent=1)
     #     anno_file = f"{path}/anno_20221229-1-cam{i}.json"
     #     with open(anno_file, "w", newline='\n') as f:
     #         f.write(total_anno)
 
+    # read the dlc label part2
+    # for i in [0, 1, 2, 3, 4, 5]:
+    #     total_anno = dlc2coco(f"{path}/labeled-data_part2/20221229-1-cam{i}", i, joint_name, skeleton, image_start=99)
+    #     ic(total_anno.keys())
+    #     anno_file = f"{path}/labeled-data_part2/anno_20221229-1-cam{i}.json"
+    #     total_anno = json.dumps(total_anno, indent=1)
+    #     with open(anno_file, "w", newline='\n') as f:
+    #         f.write(total_anno)
+
+    """combine two parts"""
+    # for i in [0, 1, 2, 3, 4, 5]:
+    #     file_part1 = f"{path}/labeled-data_part1/anno_20221229-1-cam{i}.json"
+    #     with open(file_part1, 'r') as f:
+    #         anno_part1 = json.load(f)
+    #     ic(anno_part1.keys())
+    #     ic(len(anno_part1['annotations']))
+    #     file_part2 = f"{path}/labeled-data_part2/anno_20221229-1-cam{i}.json"
+    #     with open(file_part2, 'r') as f:
+    #         anno_part2 = json.load(f)
+    #     ic(len(anno_part2['annotations']))
+    #     total_anno = {}
+    #     total_anno['annotations'] = anno_part1['annotations']+anno_part2['annotations']
+    #     total_anno['images'] = anno_part1['images']+anno_part2['images']
+    #     total_anno['categories'] = anno_part1['categories']
+    #     # ic(len(total_anno['annotations']))
+    #     anno_file = f"{path}/anno_20221229-1-cam{i}.json"
+    #     total_anno = json.dumps(total_anno, indent=1)
+    #     with open(anno_file, "w", newline='\n') as f:
+    #         f.write(total_anno)
+
+
     # combine all json files
-    # total_anno_file = f"{path}/anno_20221229-1-012345.json"
-    # total_anno = combine_json_multi_cams(path, cams=[0, 1, 2, 3, 4, 5])
-    # total_anno = json.dumps(total_anno, indent=1)
-    # with open(total_anno_file, "w", newline='\n') as f:
-    #     f.write(total_anno)
+    total_anno_file = f"{path}/anno_20221229-1-012345.json"
+    total_anno = combine_json_multi_cams(path, cams=[0, 1, 2, 3, 4, 5])
+    total_anno = json.dumps(total_anno, indent=1)
+    with open(total_anno_file, "w", newline='\n') as f:
+        f.write(total_anno)
 
     # split train and evaluation files
-    # total_anno_file = f"{path}/anno_20221229-1-012345.json"
-    # with open(total_anno_file, 'r') as f:
-    #     total_anno = json.load(f)
-    # ic(total_anno.keys())
-    # ic(len(total_anno['annotations']))
+    total_anno_file = f"{path}/anno_20221229-1-012345.json"
+    with open(total_anno_file, 'r') as f:
+        total_anno = json.load(f)
+    ic(total_anno.keys())
+    ic(len(total_anno['annotations']))
     #
-    # train_anno = {
-    #     'annotations': total_anno['annotations'][:540],
-    #     'images': total_anno['images'][:540],
-    #     'categories': total_anno['categories']
-    # }
-    # train_anno_file = f"{path}/anno_20221229-1-012345_train.json"
-    # with open(train_anno_file, "w") as f:
-    #     json.dump(train_anno, f)
-    #
-    # eval_anno = {
-    #     'annotations': total_anno['annotations'][540:],
-    #     'images': total_anno['images'][540:],
-    #     'categories': total_anno['categories']}
-    # eval_anno_file = f"{path}/anno_20221229-1-012345_test.json"
-    # with open(eval_anno_file, "w") as f:
-    #     json.dump(eval_anno, f)
+    train_anno = {
+        'annotations': total_anno['annotations'][:960],
+        'images': total_anno['images'][:960],
+        'categories': total_anno['categories']
+    }
+    train_anno_file = f"{path}/anno_20221229-1-012345_train.json"
+    with open(train_anno_file, "w") as f:
+        json.dump(train_anno, f)
+
+    eval_anno = {
+        'annotations': total_anno['annotations'][960:],
+        'images': total_anno['images'][960:],
+        'categories': total_anno['categories']}
+    eval_anno_file = f"{path}/anno_20221229-1-012345_test.json"
+    with open(eval_anno_file, "w") as f:
+        json.dump(eval_anno, f)

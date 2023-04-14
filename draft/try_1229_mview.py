@@ -1,5 +1,6 @@
 import mmcv
 import torch
+from icecream import ic
 
 from mmpose.datasets import DatasetInfo
 from mmpose.datasets import build_dataset
@@ -10,11 +11,13 @@ if __name__ == "__main__":
     # results_path = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/results/try_1229_mview"
     config = mmcv.Config.fromfile(config_file)
     dataset_info = DatasetInfo(config._cfg_dict['dataset_info'])
-    dataset = build_dataset(config.data.train)
+    dataset = build_dataset(config.data.val)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    for i in range(20):
+    for i in range(2):
         data = dataset.__getitem__(i)
+        ic(data.keys())
+
 
     #
     # checkpoint = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_mouse_1229_256x256/best_AP_epoch_90.pth"

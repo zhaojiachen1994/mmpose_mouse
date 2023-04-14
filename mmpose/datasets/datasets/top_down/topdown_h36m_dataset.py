@@ -8,8 +8,8 @@ import json_tricks as json
 import numpy as np
 from mmcv import Config, deprecated_api_warning
 
-from ...builder import DATASETS
 from ..base import Kpt2dSviewRgbImgTopDownDataset
+from ...builder import DATASETS
 
 
 @DATASETS.register_module()
@@ -150,7 +150,7 @@ class TopDownH36MDataset(Kpt2dSviewRgbImgTopDownDataset):
             dict: Evaluation results for evaluation metric.
         """
         metrics = metric if isinstance(metric, list) else [metric]
-        allowed_metrics = ['PCK', 'EPE']
+        allowed_metrics = ['PCK', 'EPE', 'mAP']
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
