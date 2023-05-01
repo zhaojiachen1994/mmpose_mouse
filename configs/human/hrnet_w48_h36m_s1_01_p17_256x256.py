@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/default_runtime.py',
-    '../_base_/human_datasets/human_p16.py'
+    '../_base_/human_datasets/human_p17.py'
 ]
 
 evaluation = dict(interval=10, metric=['PCK', 'EPE'], save_best='PCK')
@@ -27,15 +27,14 @@ log_config = dict(
 total_epochs = 120
 
 channel_cfg = dict(
-    num_output_channels=16,
-    dataset_joints=16,
+    num_output_channels=17,
+    dataset_joints=17,
     dataset_channel=[
-        [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
     ],
     inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
     ])
-
 
 # model settings
 model = dict(
@@ -147,25 +146,23 @@ data = dict(
     test_dataloader=dict(samples_per_gpu=8),
     train=dict(
         type='TopDownH36MDataset',
-        ann_file=f'{data_root}/annotations/Human36M_subjects_156_001.json',
+        ann_file=f'{data_root}/annotations/Human36M_subject1_data_01.json',
         img_prefix=f'{data_root}/images/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
     val=dict(
         type='TopDownH36MDataset',
-        ann_file=f'{data_root}/annotations/Human36M_subjects_156_001.json',
+        ann_file=f'{data_root}/annotations/Human36M_subject1_data_01.json',
         img_prefix=f'{data_root}/images/',
         data_cfg=data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
     test=dict(
         type='TopDownH36MDataset',
-        ann_file=f'{data_root}/annotations/Human36M_subjects_156_001.json',
+        ann_file=f'{data_root}/annotations/Human36M_subject1_data_01.json',
         img_prefix=f'{data_root}/images/',
         data_cfg=data_cfg,
         pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}}),
 )
-
-

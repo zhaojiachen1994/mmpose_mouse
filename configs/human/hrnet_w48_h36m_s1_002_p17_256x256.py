@@ -1,9 +1,10 @@
 _base_ = [
     '../_base_/default_runtime.py',
-    '../_base_/mouse_datasets/mouse_one_1229.py'
+    '../_base_/human_datasets/human_p17.py'
 ]
 
-evaluation = dict(interval=10, metric='mAP', save_best='AP')
+evaluation = dict(interval=10, metric=['PCK', 'EPE'], save_best='PCK')
+# evaluation = dict(interval=1, metric='mAP', save_best='AP')
 
 optimizer = dict(
     type='Adam',
@@ -17,29 +18,28 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[170, 200])
-total_epochs = 300
 log_config = dict(
     interval=1,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
     ])
+total_epochs = 120
 
-# joint channel config
 channel_cfg = dict(
-    num_output_channels=16,
-    dataset_joints=16,
+    num_output_channels=17,
+    dataset_joints=17,
     dataset_channel=[
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
     ],
     inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+    ])
 
 # model settings
 model = dict(
     type='TopDown',
-    pretrained='https://download.openmmlab.com/mmpose/'
-               'pretrain_models/hrnet_w48-8ef0771d.pth',
+    pretrained='D:/Pycharm Projects-win/mm_mouse/mmpose/official_checkpoint/hrnet_w48-8ef0771d.pth',
     backbone=dict(
         type='HRNet',
         in_channels=3,
@@ -83,7 +83,6 @@ model = dict(
         shift_heatmap=True,
         modulate_kernel=11))
 
-"""data config"""
 data_cfg = dict(
     image_size=[256, 256],
     heatmap_size=[64, 64],
@@ -91,16 +90,8 @@ data_cfg = dict(
     num_joints=channel_cfg['dataset_joints'],
     dataset_channel=channel_cfg['dataset_channel'],
     inference_channel=channel_cfg['inference_channel'],
-    soft_nms=False,
-    nms_thr=1.0,
-    oks_thr=0.9,
-    vis_thr=0.2,
-    use_gt_bbox=True,
-    det_bbox_thr=0.0,
-    bbox_file='',
 )
 
-# train pipeline config
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='TopDownGetBboxCenterScale', padding=1.25),
@@ -128,7 +119,7 @@ train_pipeline = [
         ]),
 ]
 
-eval_pipeline = [
+val_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='TopDownGetBboxCenterScale', padding=1.25),
     dict(type='TopDownAffine'),
@@ -146,35 +137,32 @@ eval_pipeline = [
         ]),
 ]
 
-test_pipeline = eval_pipeline
-
-data_root = "D:/Datasets/transfer_mouse/onemouse1229"
+test_pipeline = val_pipeline
+data_root = "D:/Datasets/h36m_dataset/human3.6m_parse"
 data = dict(
-    samples_per_gpu=16,
-    workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=16),
-    test_dataloader=dict(samples_per_gpu=16),
+    samples_per_gpu=30,
+    workers_per_gpu=5,
+    val_dataloader=dict(samples_per_gpu=8),
+    test_dataloader=dict(samples_per_gpu=8),
     train=dict(
-        type='Mouse12292dDatasetSview',
-        ann_file=f'{data_root}/anno_20221229-1-012345_train.json',
-        img_prefix=f'{data_root}/',
+        type='TopDownH36MDataset',
+        ann_file=f'{data_root}/annotations/Human36M_subject1_data_002.json',
+        img_prefix=f'{data_root}/images/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
-
     val=dict(
-        type='Mouse12292dDatasetSview',
-        ann_file=f'{data_root}/anno_20221229-1-012345_test.json',
-        img_prefix=f'{data_root}/',
+        type='TopDownH36MDataset',
+        ann_file=f'{data_root}/annotations/Human36M_subject1_data_002.json',
+        img_prefix=f'{data_root}/images/',
         data_cfg=data_cfg,
-        pipeline=train_pipeline,
+        pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
-
     test=dict(
-        type='Mouse12292dDatasetSview',
-        ann_file=f'{data_root}/anno_20221229-1-012345_test.json',
-        img_prefix=f'{data_root}/',
+        type='TopDownH36MDataset',
+        ann_file=f'{data_root}/annotations/Human36M_subject1_data_002.json',
+        img_prefix=f'{data_root}/images/',
         data_cfg=data_cfg,
-        pipeline=train_pipeline,
+        pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}}),
 )

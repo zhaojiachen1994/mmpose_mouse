@@ -1,7 +1,7 @@
 _base_ = [
     '../../_base_/default_runtime.py',
     '../../_base_/mouse_datasets/mouse_p12.py',
-    'data_thmouse_3d_p12.py',
+    'data_thmouse_p12.py',
     'model_hrnet_p12.py',
     'pipeline_target.py'
 ]

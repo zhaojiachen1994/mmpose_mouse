@@ -9,6 +9,7 @@ dataset_info = dict(
     ),
     keypoint_info={
         0:
+
             dict(
                 name='left_ear_tip', id=0, color=[92, 94, 170], type='upper', swap='right_ear_tip'),
         1:

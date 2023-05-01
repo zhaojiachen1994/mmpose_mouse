@@ -1,8 +1,8 @@
 thmouse_channel_cfg = dict(
     num_output_channels=12,
     dataset_joints=12,
-    dataset_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14],
-    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14])
+    dataset_channel=[2, 0, 1, 3, 4, 5, 6, 7, 8, 10, 12, 14],
+    inference_channel=[2, 0, 1, 3, 4, 5, 6, 7, 8, 10, 12, 14])
 thmouse_data_cfg = dict(
     image_size=[256, 256],
     heatmap_size=[64, 64],

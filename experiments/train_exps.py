@@ -221,31 +221,83 @@ if __name__ == '__main__':
 
     """train mars to dannce unsupervised 3d loss with score head"""
     # args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p5_un3d_epoch.py"
-
     # args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p9_un3d_epoch.py"
-
-    # args.config = "../configs/exp_configs/AdvTriangnet_mars_to_dannce_p9_epoch.py"
-
+    # args.config = "../configs/exp_configs/AdvTriangnet_mars_to_dannce_p9_epoch.py
     # args.config = "../configs/exp_configs/CDTriangnet_mars_to_dannce_p9.py"
-
     # args.config = "../configs/mouse/DATriangNet_mars_to_dannce.py"
 
-    """dannce to 1229"""
-    # args.config = "../configs/exp_configs/mouse/train_dannce2thmouse_hrnet_score_p12.py"
+    """mars to dannce"""
+    # config_files = ["../configs/exp_configs/mouse/train_calms2dannce_hrnet_score_p9.py",
+    #                 "../configs/exp_configs/mouse/train_calms2dannce_hrnet_score_dd_p9.py"]
+    # for config_file in config_files:
+    #     args.config = config_file
+    #     args.runner_type = "epoch_runner"
+    #     main(args)
 
-    # args.config = "../configs/exp_configs/mouse/train_dannce2thmouse_hrnet_score_dd_p12.py"
+    """mars to thmouse"""
+    # config_files = [#"../configs/exp_configs/mouse/train_calms2thmouse_hrnet_score_p9.py",
+    #                 "../configs/exp_configs/mouse/train_calms2thmouse_hrnet_score_dd_p9.py",
+    #                 ]
+    # for config_file in config_files:
+    #     args.config = config_file
+    #     args.runner_type = "epoch_runner"
+    #     main(args)
+
+    """dannce to thmouse"""
+    # config_files = ["../configs/exp_configs/mouse/train_dannce2thmouse_hrnet_score_p12.py",
+    #                 "../configs/exp_configs/mouse/train_dannce2thmouse_hrnet_score_dd_p12.py"]
+    # for config_file in config_files:
+    #     args.config = config_file
+    #     args.runner_type = "epoch_runner"
+    #     main(args)
 
     """1229 to dannce"""
-    args.config = "../configs/exp_configs/mouse/train_thmouse2dannce_hrnet_score_p12.py"
+    # config_files = ["../configs/exp_configs/mouse/train_thmouse2dannce_hrnet_score_p12.py",
+    #                 "../configs/exp_configs/mouse/train_thmouse2dannce_hrnet_score_dd_p12.py"
+    #                 ]
+    # for config_file in config_files:
+    #     args.config = config_file
+    #     args.runner_type = "epoch_runner"
+    #     main(args)
 
-    """distribution triangulate method dannce to 1229"""
-    # args.config = "../configs/exp_configs/DT_dannce_to_1229_p12.py"
+    """semi h36m"""
+    # args.config = "../configs/exp_configs/semi_human/train_semi_sub7_0001_hrnet_score_p16.py"
+    # args.config = "../configs/exp_configs/semi_human/train_semi_sub7_001_hrnet_score_p16.py"
+    # args.config = "../configs/exp_configs/semi_human/train_semi_sub1_001_hrnet_score_p16.py"
+    # config_files = [
+    #                 "../configs/exp_configs/semi_human/train_semi_sub1_001_hrnet_score_p16.py",
+    #                 # "../configs/exp_configs/semi_human/train_semi_sub7_001_hrnet_score_p16.py",
+    #                 # "../configs/exp_configs/semi_human/train_semi_sub8_001_hrnet_score_p16.py",
+    #                 # "../configs/exp_configs/semi_human/train_semi_sub9_001_hrnet_score_p16.py",
+    #                 ]
+    # for config_file in config_files:
+    #     args.config = config_file
+    #     args.runner_type = "epoch_runner"
+    #     main(args)
+    # args.config = "../configs/exp_configs/human/train_h36ms9_fully_hrnet_score.py"
+    # args.config = "../configs/exp_configs/human/train_h36ms11_fully_hrnet_score.py"
+    # args.config = "../configs/exp_configs/human/train_h36ms11_01_hrnet_score.py"
+    # args.runner_type = "epoch_runner"
+    # main(args)
 
+    # config_files = [
+    #                 "../configs/exp_configs/human/train_h36ms1_s10001_hrnet_score.py",
+    #                 "../configs/exp_configs/human/train_h36ms1_s1001_hrnet_score.py",
+    #                 "../configs/exp_configs/human/train_h36ms1_s101_hrnet_score.py",
+    #                 "../configs/exp_configs/human/train_h36ms1_s1_hrnet_score.py",
+    #                 ]
+    # for config_file in config_files:
+    #     args.config = config_file
+    #     args.runner_type = "epoch_runner"
+    #     main(args)
 
-    # args.config = "../configs/exp_configs/human/CDTriang_train_hpii_to_h36m_sub5.py"
-
-    # args.config = "../configs/exp_configs/human/DATriang_train_hpii_to_h36m_sub1.py"
-    # args.config = "../configs/exp_configs/human/SemiTriang_train_01_h36m_sub1.py"
-    args.runner_type = "epoch_runner"
-    main(args)
-
+    config_files = [
+        # "../configs/exp_configs/human/train_h36ms11_s10001_hrnet_score.py",
+        "../configs/exp_configs/human/train_h36ms11_s1001_hrnet_score.py",
+        # "../configs/exp_configs/human/train_h36ms11_s101_hrnet_score.py",
+        # "../configs/exp_configs/human/train_h36ms11_s1_hrnet_score.py",
+    ]
+    for config_file in config_files:
+        args.config = config_file
+        args.runner_type = "epoch_runner"
+        main(args)

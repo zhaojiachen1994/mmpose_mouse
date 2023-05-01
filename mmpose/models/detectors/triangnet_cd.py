@@ -70,11 +70,13 @@ class CDTriangNet(TriangNet):
         source_heatmap_pred = heatmap[:num_source_img]
         target_heatmap_pred = heatmap[num_source_img:]
 
-
         if self.with_score_head:
             scores = self.score_head(hidden_features_target)  # [num_scene*num_cams, num_joints]
         else:
-            scores = torch.ones([num_target_img, source_heatmap_gt.shape[1]], dtype=torch.float32, device=heatmap.device)
+            scores = torch.ones([num_target_img, source_heatmap_gt.shape[1]], dtype=torch.float32,
+                                device=heatmap.device)
+        # print(scores)
+        # scores = torch.clamp(scores, min=0.2, max=0.8)
         if self.with_triangulate_head:
             kpt_3d_pred, res_triang, kp_2d_croped, _, _ = \
                 self.triangulate_head(target_heatmap_pred, proj_mat, scores)

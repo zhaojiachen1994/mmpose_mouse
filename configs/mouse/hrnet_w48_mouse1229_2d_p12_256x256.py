@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/mouse_datasets/mouse_one_1229_p12.py'
 ]
 
-evaluation = dict(interval=50, metric='mAP', save_best='AP')
+evaluation = dict(interval=10, metric='mAP', save_best='AP')
 
 optimizer = dict(
     type='Adam',
@@ -17,7 +17,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[170, 200])
-total_epochs = 500
+total_epochs = 210
 log_config = dict(
     interval=1,
     hooks=[
@@ -29,8 +29,8 @@ log_config = dict(
 channel_cfg = dict(
     num_output_channels=12,
     dataset_joints=12,
-    dataset_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14],
-    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14])
+    dataset_channel=[2, 0, 1, 3, 4, 5, 6, 7, 8, 10, 12, 14],
+    inference_channel=[2, 0, 1, 3, 4, 5, 6, 7, 8, 10, 12, 14])
 
 # model settings
 model = dict(

@@ -32,4 +32,7 @@
 
 # python tools/train.py "configs/human/hrnet_w48_mpii_256x256.py" --gpu-id 0
 
-python tools/train.py "configs/human/hrnet_w48_h36m_001_p16_256x256.py" --gpu-id 0
+python
+tools / train.py
+"configs/human/hrnet_w48_h36m15678_01_p17_256x256.py" - -gpu - id
+0

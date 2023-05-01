@@ -208,30 +208,114 @@ if __name__ == '__main__':
     ##### DirectTriang #####
     # args.config = "../configs/exp_configs/DirectTriang_mars_to_dannce_p9.py"
     # args.checkpoint = "../work_dirs/hrnet_w48_mars_p9_256x256/best_AP_epoch_95.pth"
-
-
     # args.config = "../configs/exp_configs/DirectTriang_test_dannce_p9.py"
     # args.checkpoint = "../work_dirs/hrnet_w48_dannce_p9_256x256/best_AP_epoch_200.pth"
-
     # args.config = "../configs/exp_configs/Triangnet_mars_to_dannce_p9_un3d_epoch.py"
     # args.checkpoint = "work_dirs/Triangnet_mars_to_dannce_p9_un3d_epoch/best_MPJPE_epoch_40.pth"
 
+    # 下界
+    # args.config = "../configs/exp_configs/mouse/test_calms2dannce_hrnet_p9.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_mars_p9_256x256/best_AP_epoch_95.pth"
+    # main(args)
+    # 上界
+    # args.config = "../configs/exp_configs/mouse/test_dannce2dannce_hrnet_p9.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_dannce_p9_256x256/epoch_100.pth"
+    # main(args)
+
+    # residual_loss_score
+    # args.config = "../configs/exp_configs/mouse/test_calms2dannce_hrnet_score_p9.py"
+    # args.checkpoint = "../experiments/work_dirs/train_calms2dannce_hrnet_score_p9/best_MPJPE_epoch_10.pth"
+    # main(args)
+
+    # args.config = "../configs/exp_configs/mouse/test_calms2dannce_hrnet_score_dd_p9.py"
+    # args.checkpoint = "../experiments/work_dirs/train_calms2dannce_hrnet_score_dd_p9/best_MPJPE_epoch_10.pth"
+    # main(args)
+
+    "========================================"
+    "======experiment mars to thmouse p9======"
+    "========================================"
+    # 下界
+    # args.config = "../configs/exp_configs/mouse/test_calms2thmouse_hrnet_p9.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_mars_p9_256x256/best_AP_epoch_95.pth"
+    # main(args)
+
+    # 上界
+    # args.config = "../configs/exp_configs/mouse/test_thmouse2thmouse_hrnet_p9.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_1229_p9_256x256/best_AP_epoch_200.pth"
+    # main(args)
+
+    # residual_loss_score
+    # args.config = "../configs/exp_configs/mouse/test_calms2thmouse_hrnet_score_p9.py"
+    # args.checkpoint = "../experiments/work_dirs/train_calms2thmouse_hrnet_score_p9/best_MPJPE_epoch_45.pth"
+    # main(args)
+
+    # residual_loss_score_dd
+    # args.config = "../configs/exp_configs/mouse/test_calms2thmouse_hrnet_score_dd_p9.py"
+    # args.checkpoint = "../experiments/work_dirs/train_calms2thmouse_hrnet_score_dd_p9/best_MPJPE_epoch_40.pth"
+    # main(args)
     "========================================"
     "======experiment dannce to 1229 p12====="
     "========================================"
     # 下界
     # args.config = "../configs/exp_configs/mouse/test_dannce2thmouse_hrnet_p12.py"
-    # args.checkpoint = "../work_dirs/hrnet_w48_dannce_2d_p12_256x256/best_AP_epoch_100.pth"
-    # args.work_dir = osp.join('./work_dirs/mouse', f"{osp.splitext(osp.basename(args.config))[0]}_lower")
+    # args.checkpoint = "../work_dirs/hrnet_w48_dannce_2d_p12_256x256/epoch_100.pth"
     # main(args)
     # 上界
-    args.config = "../configs/exp_configs/mouse/test_thmouse2thmouse_hrnet_p12.py"
-    args.checkpoint = "../work_dirs/hrnet_w48_mouse1229_2d_p12_256x256/best_AP_epoch_300.pth"
-    # args.work_dir = osp.join('./work_dirs/mouse', f"{osp.splitext(osp.basename(args.config))[0]}_lower")
-    main(args)
-    """===================================="""
-    """=======experiment on h36m p16======="""
-    """===================================="""
+    # args.config = "../configs/exp_configs/mouse/test_thmouse2thmouse_hrnet_p12.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_mouse1229_2d_p12_256x256/best_AP_epoch_190.pth"
+    # main(args)
+    # residual_loss_score
+    # args.config = "../configs/exp_configs/mouse/test_dannce2thmouse_hrnet_score_p12.py"
+    # args.checkpoint = "../experiments/work_dirs/train_dannce2thmouse_hrnet_score_p12/best_MPJPE_epoch_115.pth"
+    # main(args)
+
+    # residual_loss_score_dd
+    # args.config = "../configs/exp_configs/mouse/test_dannce2thmouse_hrnet_score_dd_p12.py"
+    # args.checkpoint = "../experiments/work_dirs/train_dannce2thmouse_hrnet_score_dd_p12/epoch_100.pth"
+    # main(args)
+
+    "========================================"
+    "====experiment thmouse to dannce p12===="
+    "========================================"
+    # 下界
+    # args.config = "../configs/exp_configs/mouse/test_thmouse2dannce_hrnet_p12.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_mouse1229_2d_p12_256x256/best_AP_epoch_190.pth"
+    # main(args)
+    # 上界
+    # args.config = "../configs/exp_configs/mouse/test_dannce2dannce_hrnet_p12.py"
+    # args.checkpoint = "../work_dirs/hrnet_w48_dannce_2d_p12_256x256/epoch_100.pth"
+    # main(args)
+
+    # residual_loss_score
+    # args.config = "../configs/exp_configs/mouse/test_thmouse2dannce_hrnet_score_p12.py"
+    # args.checkpoint = "../experiments/work_dirs/train_thmouse2dannce_hrnet_score_p12/epoch_10.pth"
+    # main(args)
+
+    # residual_loss_dcore_dd
+    # args.config = "../configs/exp_configs/mouse/test_thmouse2dannce_hrnet_score_dd_p12.py"
+    # args.checkpoint = "../experiments/work_dirs/train_thmouse2dannce_hrnet_score_dd_p12/best_MPJPE_epoch_10.pth"
+    # main(args)
+    """========================================"""
+    """=======experiment on semi h36m s9======="""
+    """========================================"""
+    # 上界 sub9
+    # args.checkpoint = "../official_checkpoint/hrnet_w48_h36m_256x256-78e88d08_20210621.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms9_fully_hrnet.py"
+    # args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}")
+    # main(args)
+
+    # residual_loss_score
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms9_fully_hrnet_score/best_MPJPE_epoch_21_27.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms9_10hz_fully_hrnet_score.py"
+    # args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}")
+    # main(args)
+
+    # residual_loss_score 5hz 1/10 training
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms9_01_hrnet_score/best_MPJPE_epoch_119.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms9_01_hrnet_score.py"
+    # args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}")
+    # main(args)
+
     # 上界
     # args.checkpoint = "../work_dirs/hrnet_w48_h36m_p16_256x256/best_PCK_epoch_42.pth"
     # for i in [1]:
@@ -256,4 +340,46 @@ if __name__ == '__main__':
     #     args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}_01")
     #     main(args)
 
+    """========================================"""
+    """=======experiment on semi h36m s11======"""
+    """========================================"""
+    # direct subject 11
+    # args.checkpoint = "../official_checkpoint/hrnet_w48_h36m_256x256-78e88d08_20210621.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms11_fully_hrnet.py"
+    # args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}")
+    # main(args)
+    # residual_loss_score
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms11_fully_hrnet_score/best_MPJPE_epoch_3.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms11_fully_hrnet_score.py"
+    # args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}")
+    # main(args)
 
+    """========================================"""
+    """=======experiment on increasing rate======="""
+    """========================================"""
+
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms1_s1_hrnet_score/best_MPJPE_epoch_51.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms1_s1_hrnet_score.py"
+
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms1_s101_hrnet_score/best_MPJPE_epoch_60.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms1_s101_hrnet_score.py"
+
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms1_s1001_hrnet_score/best_MPJPE_epoch_57.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms1_s1001_hrnet_score.py"
+
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms1_s10001_hrnet_score/epoch_60.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms1_s10001_hrnet_score.py"
+
+    # on subject 11.
+
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms11_s1_hrnet_score/best_MPJPE_epoch_60.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms11_s1_hrnet_score.py"
+
+    args.checkpoint = "../experiments/work_dirs/train_h36ms11_s101_hrnet_score/best_MPJPE_epoch_3.pth"
+    args.config = "../configs/exp_configs/human/test_h36ms11_s101_hrnet_score.py"
+
+    # args.checkpoint = "../experiments/work_dirs/train_h36ms11_s1001_hrnet_score/best_MPJPE_epoch_54.pth"
+    # args.config = "../configs/exp_configs/human/test_h36ms11_s1001_hrnet_score.py"
+
+    args.work_dir = osp.join('./work_dirs/human', f"{osp.splitext(osp.basename(args.config))[0]}")
+    main(args)

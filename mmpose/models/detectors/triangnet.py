@@ -135,6 +135,7 @@ class TriangNet(BasePose):
                                       target,
                                       target_weight,
                                       joints_4d,
+
                                       **kwargs
                                       )
         else:
@@ -159,7 +160,6 @@ class TriangNet(BasePose):
         img = img.reshape(-1, *img.shape[2:])
         target = target.reshape(-1, *target.shape[2:])
         target_weight = target_weight.reshape(-1, *target_weight.shape[2:])
-
         hidden_features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(hidden_features)
@@ -169,7 +169,7 @@ class TriangNet(BasePose):
             scores = self.score_head(hidden_features)  # [bs*num_cams, num_joints]
         else:
             scores = torch.ones(*target.shape[:2], dtype=torch.float32, device=target.device)
-        # ic(scores)
+        # scores = torch.clamp(scores, min=0.35, max=0.65)
         if self.with_triangulate_head:
             kpt_3d_pred, res_triang, kp_2d_croped, _, _ = \
                 self.triangulate_head(heatmap, proj_mat, scores)
@@ -213,10 +213,6 @@ class TriangNet(BasePose):
         features = self.backbone(img)
         if self.with_keypoint_head:
             heatmap = self.keypoint_head(features)  # for triangulate-head input, [bs*num_cams, num_channel, ]
-            # ic(heatmap.shape)
-            # conf_heatmap = torch.amax(heatmap, 1)/torch.sum(heatmap, 1)
-            # conf_heatmap = torch.unsqueeze(conf_heatmap, -1).detach()
-            # ic(conf_heatmap.shape)
 
             output_heatmap = self.keypoint_head.inference_model(
                 features, flip_pairs=None)
@@ -226,8 +222,9 @@ class TriangNet(BasePose):
         else:
             scores = torch.ones(*heatmap.shape[:2], dtype=torch.float32, device=img.device)
         # clamp the scores into [0.2, 0.8]
-        scores = torch.clamp(scores, min=0.35, max=0.65)
-
+        # print(scores)
+        # scores = torch.clamp(scores, min=0.4, max=0.6)
+        # print(scores)
         if self.test_cfg.get('flip_test', True):
             img_flipped = img.flip(3)
             features_flipped = self.backbone(img_flipped)

@@ -1,24 +1,24 @@
 _base_ = [
     '../../_base_/default_runtime.py',
     '../../_base_/mouse_datasets/mouse_p12.py',
-    'data_dannce_2d_p12.py',
-    'data_thmouse_3d_p12.py',
+    'data_dannce_p12.py',
+    'data_thmouse_p12.py',
     'pipeline_source.py',
     'pipeline_target.py',
     'model_cd_hrnet_score_dd_p12.py',
 ]
 
-total_epochs = 500
+total_epochs = 120
 
-evaluation = dict(interval=1, metric='mpjpe', by_epoch=True, save_best='MPJPE')
-optimizer = dict(type='Adam', lr=1e-5,)
+evaluation = dict(interval=5, metric='mpjpe', by_epoch=True, save_best='MPJPE')
+optimizer = dict(type='Adam', lr=1e-5, )
 optimizer_config = dict(grad_clip=None)
 
 lr_config = dict(policy='step', warmup='linear', warmup_iters=50, warmup_ratio=0.001, step=[17, 20])
 
 log_config = dict(interval=1, hooks=[dict(type='TextLoggerHook'),])
 
-load_from = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_dannce_2d_p12_256x256/best_AP_epoch_100.pth"
+load_from = "D:/Pycharm Projects-win/mm_mouse/mmpose/work_dirs/hrnet_w48_dannce_2d_p12_256x256/best_AP_epoch_205.pth"
 
 dannce_root = 'D:/Datasets/transfer_mouse/dannce_20230130'
 thmouse_root = "D:/Datasets/transfer_mouse/onemouse1229"

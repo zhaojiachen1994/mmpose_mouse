@@ -132,13 +132,12 @@ def reorder_annotations():
 
     id = 0
 
-    for subject in [11]:
-        # doesn't work for subject 11
+    for subject in [9]:
         annotations = {}
         annotations['images'] = []
         annotations['annotations'] = []
         video_start = 0
-        anno_file = f"{data_root}/annotations/Human36M_subject{subject}_joint_2d.json"
+        anno_file = f"{data_root}/annotations_old/Human36M_subject{subject}_joint_2d.json"
         with open(anno_file, 'r') as f:
             orginal_anno_data = json.load(f)
             ic(orginal_anno_data.keys())
@@ -153,45 +152,81 @@ def reorder_annotations():
 
                 img_video = os.listdir(f"{data_root}/images/{image_folder}")
                 num_frames = len(img_video) - 1
+
+                if subject == 11 and action_id == '02' and subact_id == '02':  # image is lost
+                    video_start = video_start + num_frames * 3
+                    continue
+
+                # if subject == 9 and action_id == '05' and subact_id == '02':    # greating
+                if subject == 9 and action_id == '05':  # greating
+                    video_start = video_start + num_frames * 4
+                    continue
+
+                if subject == 9 and action_id == '10':  # sittingdown
+                    video_start = video_start + num_frames * 4
+                    continue
+
+                # if subject == 9 and action_id == '10' and subact_id == '02':    # sittingdown
+                if subject == 9 and action_id == '10':  # sittingdown
+                    video_start = video_start + num_frames * 4
+                    continue
+
+                # if subject == 9 and action_id == '13' and subact_id == '01':  # waiting
+                if subject == 9 and action_id == '13':  # waiting
+                    video_start = video_start + num_frames * 4
+                    continue
+
                 for i_frame in range(num_frames):
                     for i_cam, cam in enumerate(cams):
                         orginal_index = video_start + num_frames * i_cam + i_frame
                         img_one = orginal_anno_data['images'][orginal_index]
-        #                 img_one['id'] = id
-        #                 annotations['images'].append(img_one)
-        #                 anno_one = orginal_anno_data['annotations'][orginal_index]
-        #                 anno_one['id'] = id
-        #                 anno_one['image_id'] = id
-        #                 annotations['annotations'].append(anno_one)
-        #                 id = id + 1
-        #         video_start = video_start + num_frames * 4
-        #         ic(action_id, subact_id, i_frame, i_cam)
-        # new_anno_file = f"{data_root}/annotations/Human36M_subject{subject}_data_reorder.json"
-        # with open(new_anno_file, "w") as f:
-        #     json.dump(annotations, f)
+                        img_one['id'] = id
+                        annotations['images'].append(img_one)
+                        anno_one = orginal_anno_data['annotations'][orginal_index]
+                        anno_one['id'] = id
+                        anno_one['image_id'] = id
+                        annotations['annotations'].append(anno_one)
+                        id = id + 1
+                video_start = video_start + num_frames * 4
+                # ic(action_id, subact_id, i_frame, i_cam)
+        new_anno_file = f"{data_root}/annotations_old/Human36M_subject{subject}_data_reorder.json"
+        with open(new_anno_file, "w") as f:
+            json.dump(annotations, f)
 
 
 def downsample_h36m():
-
-    suffix = "_01"
-    if suffix == "":
-        ss = 4*10
+    suffix = "_0002"
+    if suffix == "_10hz":  #
+        ss = 4 * 5
+    if suffix == "":  #
+        ss = 4 * 10
     elif suffix == "_0001":
-        ss = 4*10000        # 0.001 to train
-    elif suffix == "_001":   # 0.01 to train
-        ss = 4*1000
-    elif suffix == "_002":   # 0.02 to train
-        ss = 4*500
-    elif suffix == "_005":   # 0.05 to train
-        ss = 4*200
-    elif suffix == "_01":   # 0.05 to train
-        ss = 4*100
+        ss = 4 * 10000  # 0.001 to train
+    elif suffix == "_0002":
+        ss = 4 * 5000
+    elif suffix == "_001":  # 0.01 to train
+        ss = 4 * 1000
+    elif suffix == "_002":  # 0.02 to train
+        ss = 4 * 500
+    elif suffix == "_005":  # 0.05 to train
+        ss = 4 * 200
+    elif suffix == "_01":  # 0.05 to train
+        ss = 4 * 100
+    elif suffix == "_02":  # 0.05 to train
+        ss = 4 * 50
 
+    # elif suffix == "_02":  # 0.05 to train
+    # ss = 4 * 100
 
+    elif suffix == "_02":  # 0.05 to train
+        ss = 4 * 50
 
-    for person in [1,5,6,7,8,9]:
-        with open(f"D:/Datasets/h36m_dataset/human3.6m_parse/annotations_old/Human36M_subject{person}_data_reorder.json", 'r',
-                  encoding='UTF-8') as f:
+    # for person in [1,5,6,7,8,9]:
+    for person in [1]:
+        with open(
+                f"D:/Datasets/h36m_dataset/human3.6m_parse/annotations_old/Human36M_subject{person}_data_reorder.json",
+                'r',
+                encoding='UTF-8') as f:
             load_dict = json.load(f)
             ic(load_dict.keys())
             new_dict = {}
@@ -200,7 +235,8 @@ def downsample_h36m():
             new_dict['annotations'] = []
             print(len(load_dict['images']))
             for i in range(0, len(load_dict['images']) - 4, ss):
-                # base down: 200 for 1/50, 1hz; 2000 for 1/500, 10% supervised, 1000 for 
+                # base down: 200 for 1/50, 1hz; 2000 for 1/500, 10% supervised, 1000 for
+                # print(i, load_dict['images'][i]['cam_idx'])
                 new_dict['images'].append(load_dict['images'][i])
                 assert load_dict['images'][i]['cam_idx'] == 1
                 new_dict['images'].append(load_dict['images'][i + 1])
@@ -231,12 +267,15 @@ def downsample_h36m():
 
 def combine_multi_subjects():
     root = "D:/Datasets/h36m_dataset/human3.6m_parse/annotations"
-    suffix = "01"
-    total_anno = {'images':[], 'annotations':[]}
-    subjects = "156"
-    # subjects = "789"
+    # suffix = "_00"
+    suffix = ""
+    total_anno = {'images': [], 'annotations': []}
+    # subjects = "15678"
+    # total_anno_file = f"{root}/Human36M_subjects_{subjects}{suffix}.json"
+    subjects = "911"
+    total_anno_file = f"{root}/Human36M_subjects_{subjects}{suffix}.json"
     for i in subjects:
-        file = f"{root}/Human36M_subject{i}_data_{suffix}.json"
+        file = f"{root}/Human36M_subject{i}_data{suffix}.json"
         with open(file, 'r') as f:
             anno_i = json.load(f)
             total_anno['images'].extend(anno_i['images'])
@@ -248,12 +287,50 @@ def combine_multi_subjects():
         total_anno['annotations'][i]['id'] = i
         total_anno['annotations'][i]['image_id'] = i
     total_anno = json.dumps(total_anno, indent=0)
-    total_anno_file = f"{root}/Human36M_subjects_{subjects}_{suffix}.json"
     with open(total_anno_file, "w") as f:
         f.write(total_anno)
+
+
+def process_p11():
+    subject = 11
+    data_root = "D:/Datasets/h36m_dataset/human3.6m_parse"
+    anno_file = f"{data_root}/annotations_old/Human36M_subject11_data.json"
+    with open(anno_file, 'r') as f:
+        anno_data = json.load(f)
+    ic(anno_data.keys())
+    ic(len(anno_data['images']))
+    ic(len(anno_data['annotations']))
+    actions_ids = [f"{i:02d}" for i in range(2, 4)]  # subject11 only works for (2, 16)
+    subact_ids = [f"{i:02d}" for i in range(1, 3)]
+    cams = [f"{i:02d}" for i in range(1, 5)]
+    video_start = 0
+    for action_id in actions_ids:
+        for subact_id in subact_ids:
+            image_folder = \
+                f"s_{subject:02d}_act_{action_id}_subact_{subact_id}_ca_04"
+            img_video = os.listdir(f"{data_root}/images/{image_folder}")
+            num_frames = len(img_video) - 1
+            if action_id == '02' and subact_id == '02':
+                video_start = video_start + num_frames * 3
+                print(video_start)
+                continue
+            for i_frame in range(num_frames):
+                for i_cam, cam in enumerate(cams):
+                    orginal_index = video_start + num_frames * i_cam + i_frame
+                    # ic(anno_data['images'][orginal_index]['cam_idx'], int(cam))
+                    if anno_data['images'][orginal_index]['cam_idx'] != int(cam):
+                        print(anno_data['images'][orginal_index]['id'])
+                        print(orginal_index, cam, action_id, subact_id, i_frame,
+                              anno_data['images'][orginal_index]['cam_idx'])
+
+            # if action_id == 2 and subact_id == 2:
+            #     video_start = video_start + num_frames * 3
+            # else:
+            video_start = video_start + num_frames * 4
 
 
 if __name__ == "__main__":
     # reorder_annotations()
     downsample_h36m()
-    combine_multi_subjects()
+    # combine_multi_subjects()
+    # process_p11()

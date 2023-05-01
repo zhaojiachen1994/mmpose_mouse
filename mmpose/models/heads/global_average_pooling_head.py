@@ -4,6 +4,10 @@ import torch.nn as nn
 from mmcv.cnn import (constant_init, normal_init)
 
 from ..builder import HEADS
+import torch.nn as nn
+from mmcv.cnn import (constant_init, normal_init)
+
+from ..builder import HEADS
 
 BN_MOMENTUM = 0.1
 
@@ -33,7 +37,8 @@ class GlobalAveragePoolingHead(nn.Module):
             nn.Linear(512, 256),
             nn.ReLU(inplace=True),
             nn.Linear(256, n_classes),
-            nn.Sigmoid()
+            # nn.Sigmoid()
+            nn.Tanh()
         )
 
     def forward(self, x):
@@ -45,6 +50,7 @@ class GlobalAveragePoolingHead(nn.Module):
         x = x.mean(dim=-1)
 
         out = self.fc_layers(x)
+        out = (out + 5) / 10
         return out
 
     def _transform_inputs(self, inputs):

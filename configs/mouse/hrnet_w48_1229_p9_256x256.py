@@ -1,9 +1,9 @@
 _base_ = [
     '../_base_/default_runtime.py',
-    '../_base_/mouse_datasets/mouse_9.py'
+    '../_base_/mouse_datasets/mouse_p9.py'
 ]
 
-evaluation = dict(interval=10, metric='mAP', save_best='AP')
+evaluation = dict(interval=5, metric='mAP', save_best='AP')
 
 optimizer = dict(
     type='Adam',
@@ -28,8 +28,8 @@ log_config = dict(
 channel_cfg = dict(
     num_output_channels=9,
     dataset_joints=9,
-    dataset_channel=[2, 0, 1, 3, 5, 8, 10, 12, 14],
-    inference_channel=[2, 0, 1, 3, 5, 8, 10, 12, 14])
+    dataset_channel=[0, 1, 2, 3, 5, 8, 10, 12, 14],
+    inference_channel=[0, 1, 2, 3, 5, 8, 10, 12, 14])
 
 # model settings
 model = dict(
